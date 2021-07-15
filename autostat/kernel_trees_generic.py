@@ -22,8 +22,6 @@ from .kernel_tree_types import (
     AutoGpModel,
 )
 
-from multimethod import multimethod
-
 
 def kernel_type(k: KernelSpec) -> str:
     if isinstance(k, RBFKernelSpec):
