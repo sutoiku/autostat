@@ -7,8 +7,7 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 from typing import Generic, NamedTuple, Union, Protocol, TypeVar
-import typing as ty
-from dataclasses import dataclass, astuple
+from dataclasses import asdict, dataclass, astuple, field
 
 
 # A kernel spec is composed of a top level AdditiveKernelSpec
@@ -38,21 +37,32 @@ ProductOperandSpec = Union[
 ]
 
 
-def add_kernel_spec_methods(original_class):
+class KernelSpecFns:
+    def spec_str(self, verbose=True, pretty=True) -> str:
+        ...
+
+    def num_params(self) -> int:
+        ...
+
     def __str__(self) -> str:
         return self.spec_str(True, True)
 
     def __repr__(self) -> str:
         return self.spec_str(True, False)
 
-    original_class.__str__ = __str__
-    original_class.__repr__ = __repr__
-    return original_class
+    def schema(self) -> str:
+        return self.spec_str(False, False)
+
+    def __iter__(self):
+        yield from astuple(self)
+
+    def _asdict(self):
+        return asdict(self)
 
 
-@add_kernel_spec_methods
-class AdditiveKernelSpec(NamedTuple):
-    operands: list["ProductKernelSpec"] = []
+@dataclass(frozen=True)
+class AdditiveKernelSpec(KernelSpecFns):
+    operands: list["ProductKernelSpec"] = field(default_factory=list)
 
     def num_params(self) -> int:
         return sum(op.num_params() for op in self.operands)
@@ -65,9 +75,11 @@ class AdditiveKernelSpec(NamedTuple):
             return f"ADD({', '.join(operandStrings)})"
 
 
-@add_kernel_spec_methods
-class ProductKernelSpec(NamedTuple):
-    operands: list[Union["BaseKernelSpec", AdditiveKernelSpec]] = []
+@dataclass(frozen=True)
+class ProductKernelSpec(KernelSpecFns):
+    operands: list[Union["BaseKernelSpec", AdditiveKernelSpec]] = field(
+        default_factory=list
+    )
     scalar: float = 1
 
     def num_params(self) -> int:
@@ -84,8 +96,8 @@ class ProductKernelSpec(NamedTuple):
             return f"PROD({scalar_str}{', '.join(operandStrings)})"
 
 
-@add_kernel_spec_methods
-class RBFKernelSpec(NamedTuple):
+@dataclass(frozen=True)
+class RBFKernelSpec(KernelSpecFns):
     length_scale: float = 1
 
     def num_params(self) -> int:
@@ -98,8 +110,8 @@ class RBFKernelSpec(NamedTuple):
             return "RBF"
 
 
-@add_kernel_spec_methods
-class PeriodicKernelSpec(NamedTuple):
+@dataclass(frozen=True)
+class PeriodicKernelSpec(KernelSpecFns):
     length_scale: float = 1
     period: float = 1
 
@@ -113,8 +125,8 @@ class PeriodicKernelSpec(NamedTuple):
             return "PER"
 
 
-@add_kernel_spec_methods
-class RQKernelSpec(NamedTuple):
+@dataclass(frozen=True)
+class RQKernelSpec(KernelSpecFns):
     length_scale: float = 1
     alpha: float = 1
 
@@ -128,8 +140,8 @@ class RQKernelSpec(NamedTuple):
             return "RQ"
 
 
-@add_kernel_spec_methods
-class LinearKernelSpec(NamedTuple):
+@dataclass(frozen=True)
+class LinearKernelSpec(KernelSpecFns):
     variance: float = 1
 
     def num_params(self) -> int:
@@ -179,6 +191,12 @@ Dataset = Union[TorchDataSet, NpDataSet]
 Dataseries = Union[torch.Tensor, ArrayLike]
 
 
+class ModelPredictions(NamedTuple):
+    y: np.ndarray
+    lower: np.ndarray
+    upper: np.ndarray
+
+
 class AutoGpModel(Protocol):
     def __init__(self, kernel_spec: KernelSpec, data: Dataset) -> None:
         ...
@@ -186,7 +204,7 @@ class AutoGpModel(Protocol):
     def fit(self, data: Dataset) -> None:
         ...
 
-    def predict(self, x: ArrayLike) -> ty.Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def predict(self, x: ArrayLike) -> ModelPredictions:
         ...
 
     def residuals(self) -> np.ndarray:

@@ -22,7 +22,7 @@ from .kernel_tree_types import (
     AutoGpModel,
 )
 
-from .kernel_trees_generic import kernel_str, kernel_type
+from .kernel_trees_generic import kernel_type
 
 base_kernel_classes: list[type[BaseKernelSpec]] = [
     RBFKernelSpec,
@@ -32,7 +32,12 @@ base_kernel_classes: list[type[BaseKernelSpec]] = [
 ]
 
 
-# base_kernels = [repr(k) for k in base_kernels]
+# FIX: need to simplify kernels like:
+#  'ADD(PROD(ADD(PROD(LIN), PROD(RBF))))',
+#  'ADD(PROD(ADD(PROD(PER), PROD(RBF))))',
+#  'ADD(PROD(ADD(PROD(RBF), PROD(RBF))))',
+#  'ADD(PROD(ADD(PROD(RBF), PROD(RQ))))',
+#  -- ADD(PROD_with_one_add_term(ADD(...))) -> ADD(...)
 
 
 class KernelInitialValues(NamedTuple):
@@ -79,13 +84,13 @@ GenericKernelSpecClasses = TypeVar(
 def sort_specs_by_type(
     kernels: list[GenericKernelSpecClasses],
 ) -> list[GenericKernelSpecClasses]:
-    return sorted(kernels, key=lambda node: kernel_str(node))
+    return sorted(kernels, key=lambda node: node.spec_str(False, False))
 
 
 def sort_operand_list(
     operands: list[GenericKernelSpecClasses],
 ) -> list[GenericKernelSpecClasses]:
-    return sorted(operands, key=lambda operand: kernel_str(operand))
+    return sorted(operands, key=lambda operand: operand.spec_str(False, False))
 
 
 def sort_list_of_operand_lists(
@@ -99,7 +104,7 @@ def sort_list_of_operand_lists(
 def dedupe_kernels(
     kernel: list[GenericKernelSpecClasses],
 ) -> list[GenericKernelSpecClasses]:
-    subtree_dict = {kernel_str(k): k for k in kernel}
+    subtree_dict = {k.spec_str(False, False): k for k in kernel}
     return sort_specs_by_type(list(subtree_dict.values()))
 
 

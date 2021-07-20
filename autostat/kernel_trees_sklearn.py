@@ -21,6 +21,7 @@ from .kernel_tree_types import (
     Dataset,
     KernelSpec,
     LinearKernelSpec,
+    ModelPredictions,
     NpDataSet,
     PeriodicKernelSpec,
     ProductKernelSpec,
@@ -221,13 +222,13 @@ class SklearnGPModel:
             self.log_likelihood(),
         )
 
-    def predict(self, x: ArrayLike) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def predict(self, x: ArrayLike) -> ModelPredictions:
         y_pred, y_std = T.cast(
             tuple[np.ndarray, np.ndarray], self.gp.predict(x, return_std=True)
         )
         y_pred = y_pred.flatten()
         y_std = y_std.flatten()
-        return (y_pred, y_pred - 2 * y_std, y_pred + 2 * y_std)
+        return ModelPredictions(y_pred, y_pred - 2 * y_std, y_pred + 2 * y_std)
 
     def residuals(self) -> np.ndarray:
         yHat, _, _ = self.predict(self.data.train_x)
@@ -236,5 +237,5 @@ class SklearnGPModel:
     def print_fitted_kernel(self):
         print(self.gp.kernel_)
 
-    def to_spec(self) -> KernelSpec:
+    def to_spec(self) -> AdditiveKernelSpec:
         return to_kernel_spec(T.cast(Sum, self.gp.kernel_))
