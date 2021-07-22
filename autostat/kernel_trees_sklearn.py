@@ -139,7 +139,8 @@ def to_kernel_spec_product(kernel: Product) -> ProductKernelSpec:
             or isinstance(this_k, ExpSineSquared)
             or isinstance(this_k, DotProduct)
         ):
-            operands.append(to_kernel_spec_inner(this_k))
+            spec = T.cast(ProductOperandSpec, to_kernel_spec_inner(this_k))
+            operands.append(spec)
         else:
             print("invalid kernel type for to_kernel_spec_product:", type(this_k))
             print(this_k)

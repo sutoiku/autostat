@@ -11,7 +11,6 @@ from .kernel_tree_types import (
     KernelSpec,
     ArithmeticKernelSpec,
     BaseKernelSpec,
-    BaseKernelSpecTypes,
     AdditiveKernelSpec,
     ProductKernelSpec,
     ProductOperandSpec,
@@ -22,7 +21,6 @@ from .kernel_tree_types import (
     AutoGpModel,
 )
 
-from .kernel_trees_generic import kernel_type
 
 base_kernel_classes: list[type[BaseKernelSpec]] = [
     RBFKernelSpec,
@@ -30,14 +28,6 @@ base_kernel_classes: list[type[BaseKernelSpec]] = [
     LinearKernelSpec,
     PeriodicKernelSpec,
 ]
-
-
-# FIX: need to simplify kernels like:
-#  'ADD(PROD(ADD(PROD(LIN), PROD(RBF))))',
-#  'ADD(PROD(ADD(PROD(PER), PROD(RBF))))',
-#  'ADD(PROD(ADD(PROD(RBF), PROD(RBF))))',
-#  'ADD(PROD(ADD(PROD(RBF), PROD(RQ))))',
-#  -- ADD(PROD_with_one_add_term(ADD(...))) -> ADD(...)
 
 
 class KernelInitialValues(NamedTuple):
@@ -73,11 +63,13 @@ def other_base_kernels(
 
 GenericKernelSpecClasses = TypeVar(
     "GenericKernelSpecClasses",
-    KernelSpec,
-    BaseKernelSpec,
-    "AdditiveKernelSpec",
-    "ProductKernelSpec",
-    ProductOperandSpec,
+    bound=Union[
+        KernelSpec,
+        BaseKernelSpec,
+        "AdditiveKernelSpec",
+        "ProductKernelSpec",
+        ProductOperandSpec,
+    ],
 )
 
 
@@ -98,6 +90,48 @@ def sort_list_of_operand_lists(
 ) -> list[list[GenericKernelSpecClasses]]:
     return sorted(
         operand_lists, key=lambda operand_list: str(sort_operand_list(operand_list))
+    )
+
+
+def simplify_additive_kernel_spec(kernel: AdditiveKernelSpec) -> AdditiveKernelSpec:
+    # This function simplifies kernels like:
+    # `ADD([PROD(ADD([PROD(LIN), PROD(RBF)]))])`
+    # down to e.g. `ADD([PROD(LIN), PROD(RBF)])`.
+    # I.e., sums of products with only one sum term in the product are simplified
+    # down to a single sum.
+
+    if len(kernel.operands) > 1:
+        # if this ADD has more than one PROD operand, return input kernel
+        return kernel
+
+    lone_product_kernel = kernel.operands[0]
+
+    if len(lone_product_kernel.operands) > 1:
+        # if this PROD kernel has multiple operands, return input kernel
+        return kernel
+
+    lone_multiplicand = kernel.operands[0].operands[0]
+
+    if not isinstance(lone_multiplicand, AdditiveKernelSpec):
+        # if the inner kernel within the product is not a SUM, then it is
+        # the product of the base kernel with a scalar, so return the input
+        return kernel
+
+    # if we've gotten this far, then:
+    # 1) this outer sum kernel has only one summand (which must be a PROD kernel),
+    # 2) this product kernel has only one multiplicand
+    # 3) this lone multiplicand is an additive kernel
+    # this being the case, it's valid to
+    # remove the middle product layer, and propogate its scalar
+    # down to the product terms below the second sum
+
+    outer_scalar = lone_product_kernel.scalar
+
+    return AdditiveKernelSpec(
+        [
+            summand.clone_update({"scalar": summand.scalar * outer_scalar})
+            for summand in lone_multiplicand.operands
+        ]
     )
 
 
@@ -123,7 +157,10 @@ def base_subtree_swaps(
     node: BaseKernelSpec, initial_vals: KernelInitialValues = KernelInitialValues()
 ) -> list[Union[BaseKernelSpec, AdditiveKernelSpec, ProductKernelSpec]]:
     # other base kernels
-    nodes_out = cast(list[KernelSpec], other_base_kernels(node, initial_vals))
+    nodes_out = cast(
+        list[Union[BaseKernelSpec, AdditiveKernelSpec, ProductKernelSpec]],
+        other_base_kernels(node, initial_vals),
+    )
     # this base kernel with sums and products of all base kernels
     for bk in base_kernel_classes:
         nodes_out.append(

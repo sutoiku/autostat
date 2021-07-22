@@ -5,6 +5,7 @@ from ..kernel_swaps import (
     sort_list_of_operand_lists,
     sort_specs_by_type,
     base_subtree_swaps,
+    simplify_additive_kernel_spec,
 )
 from ..kernel_tree_types import (
     RBFKernelSpec as RBF,
@@ -22,6 +23,52 @@ def test_other_base_kernels():
         LIN(),
         PER(),
     ]
+
+
+class TestSimplifyAdditiveKernel:
+    def test_simple_case(self):
+        k = ADD([PROD([ADD([PROD([LIN()]), PROD([RBF()])])])])
+        k_simple = ADD([PROD([LIN()]), PROD([RBF()])])
+        assert simplify_additive_kernel_spec(k) == k_simple
+
+    def test_simple_case_with_scalars(self):
+        k = ADD([PROD([ADD([PROD([LIN()], 5), PROD([RBF()], 7)])], 10)])
+        k_simple = ADD([PROD([LIN()], 50), PROD([RBF()], 70)])
+        assert simplify_additive_kernel_spec(k) == k_simple
+
+    def test_simple_case_with_scalars_and_params(self):
+        k = ADD([PROD([ADD([PROD([LIN(345)], 5), PROD([RBF(876)], 7)])], 10)])
+        k_simple = ADD([PROD([LIN(345)], 50), PROD([RBF(876)], 70)])
+        assert simplify_additive_kernel_spec(k) == k_simple
+
+    def test_non_simplifiable_case(self):
+        k = ADD(
+            [
+                PROD(
+                    [
+                        ADD([PROD([LIN()]), PROD([RBF()])]),
+                        ADD([PROD([LIN()]), PROD([RBF()])]),
+                    ]
+                )
+            ]
+        )
+        # k_simple = ADD([PROD([LIN()]), PROD([RBF()])])
+        assert simplify_additive_kernel_spec(k) == k
+
+    def test_non_simplifiable_case_with_params(self):
+        k = ADD(
+            [
+                PROD(
+                    [
+                        ADD([PROD([LIN(12)]), PROD([RBF(34)])]),
+                        ADD([PROD([LIN(56)]), PROD([RBF(78)])]),
+                    ],
+                    123,
+                )
+            ]
+        )
+        # k_simple = ADD([PROD([LIN()]), PROD([RBF()])])
+        assert simplify_additive_kernel_spec(k) == k
 
 
 class TestBaseSubtreeSwaps:

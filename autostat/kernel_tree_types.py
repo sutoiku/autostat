@@ -6,8 +6,8 @@ from sklearn.gaussian_process import GaussianProcessRegressor
 import numpy as np
 from numpy.typing import ArrayLike
 
-from typing import Generic, NamedTuple, Union, Protocol, TypeVar
-from dataclasses import asdict, dataclass, astuple, field
+from typing import Any, Generic, NamedTuple, Union, Protocol, TypeVar, Type
+from dataclasses import asdict, dataclass, astuple, field, replace
 
 
 # A kernel spec is composed of a top level AdditiveKernelSpec
@@ -15,17 +15,9 @@ from dataclasses import asdict, dataclass, astuple, field
 # each product has a scalar and one or more operands
 # product operands may be either base kernels or additive kernels
 
-KernelSpec = Union["ArithmeticKernelSpec", "BaseKernelSpec"]
+# KernelSpec = Union["ArithmeticKernelSpec", "BaseKernelSpec"]
 
 ArithmeticKernelSpec = Union["AdditiveKernelSpec", "ProductKernelSpec"]
-
-
-BaseKernelSpecTypes = Union[
-    type["RBFKernelSpec"],
-    type["PeriodicKernelSpec"],
-    type["LinearKernelSpec"],
-    type["RQKernelSpec"],
-]
 
 
 ProductOperandSpec = Union[
@@ -36,8 +28,14 @@ ProductOperandSpec = Union[
     "AdditiveKernelSpec",
 ]
 
+T = TypeVar("T", bound="KernelSpec")
 
-class KernelSpecFns:
+
+@dataclass(frozen=True)
+class KernelSpec:
+    def __init__(self, kwargs: dict[str, Any] = {}) -> None:
+        ...
+
     def spec_str(self, verbose=True, pretty=True) -> str:
         ...
 
@@ -53,15 +51,18 @@ class KernelSpecFns:
     def schema(self) -> str:
         return self.spec_str(False, False)
 
+    def clone_update(self: T, kwargs: dict[str, Any] = {}) -> T:
+        return replace(self, **kwargs)
+
     def __iter__(self):
         yield from astuple(self)
 
-    def _asdict(self):
+    def _asdict(self) -> dict[str, Any]:
         return asdict(self)
 
 
 @dataclass(frozen=True)
-class AdditiveKernelSpec(KernelSpecFns):
+class AdditiveKernelSpec(KernelSpec):
     operands: list["ProductKernelSpec"] = field(default_factory=list)
 
     def num_params(self) -> int:
@@ -76,7 +77,7 @@ class AdditiveKernelSpec(KernelSpecFns):
 
 
 @dataclass(frozen=True)
-class ProductKernelSpec(KernelSpecFns):
+class ProductKernelSpec(KernelSpec):
     operands: list[Union["BaseKernelSpec", AdditiveKernelSpec]] = field(
         default_factory=list
     )
@@ -95,9 +96,15 @@ class ProductKernelSpec(KernelSpecFns):
             scalar_str = f"{self.scalar:.2f}, " if verbose else ""
             return f"PROD({scalar_str}{', '.join(operandStrings)})"
 
+    def clone_update(self, kwargs: dict[str, Any] = {}) -> "ProductKernelSpec":
+        cloned_operands = [op.clone_update() for op in self.operands]
+        return replace(
+            self, **{"operands": cloned_operands, "scalar": self.scalar, **kwargs}
+        )
+
 
 @dataclass(frozen=True)
-class RBFKernelSpec(KernelSpecFns):
+class RBFKernelSpec(KernelSpec):
     length_scale: float = 1
 
     def num_params(self) -> int:
@@ -111,7 +118,7 @@ class RBFKernelSpec(KernelSpecFns):
 
 
 @dataclass(frozen=True)
-class PeriodicKernelSpec(KernelSpecFns):
+class PeriodicKernelSpec(KernelSpec):
     length_scale: float = 1
     period: float = 1
 
@@ -126,7 +133,7 @@ class PeriodicKernelSpec(KernelSpecFns):
 
 
 @dataclass(frozen=True)
-class RQKernelSpec(KernelSpecFns):
+class RQKernelSpec(KernelSpec):
     length_scale: float = 1
     alpha: float = 1
 
@@ -141,7 +148,7 @@ class RQKernelSpec(KernelSpecFns):
 
 
 @dataclass(frozen=True)
-class LinearKernelSpec(KernelSpecFns):
+class LinearKernelSpec(KernelSpec):
     variance: float = 1
 
     def num_params(self) -> int:

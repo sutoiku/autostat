@@ -103,7 +103,7 @@ def score_kernel_specs(
     data: Dataset,
     model_class: type[AutoGpModel],
     kernel_scores: KernelScores,
-):
+) -> KernelScores:
     for spec in specs:
         spec_str = spec.spec_str(False, False)
         if spec_str in kernel_scores:
@@ -145,7 +145,7 @@ def kernel_search(
     initial_kernels: list[AdditiveKernelSpec] = starting_kernel_specs(),
     kernel_scores: KernelScores = None,
     search_iterations: int = 3,
-):
+) -> KernelScores:
     kernel_scores = {} if kernel_scores is None else kernel_scores
 
     specs = initial_kernels
@@ -169,6 +169,7 @@ def kernel_search(
 
         ax = plot_model(best_model, data)
         ax.set_title(best_kernel_str)
+        plt.show()
 
         specs = additive_subtree_swaps(best_kernel_info.spec_fitted, initial_values)
         print("---specs next---")

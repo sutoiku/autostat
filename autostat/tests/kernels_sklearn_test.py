@@ -30,7 +30,7 @@ from ..kernel_search import starting_kernel_specs
 
 from ..kernel_trees_sklearn import (
     build_kernel,
-    # to_kernel_spec,
+    build_kernel_additive,
     to_kernel_spec,
     to_kernel_spec_inner,
 )
@@ -46,8 +46,6 @@ class TestToKernelSpec:
         k_sklearn = 22 * ExpSineSquared()
         k_autostat = ADD([PROD([PER()], 22)])
 
-        # print(str(k_autostat))
-        # print(str(to_kernel_spec(k_sklearn)))
         assert str(k_autostat) == str(to_kernel_spec(k_sklearn))
 
     def test_simple_composite_kernel(self):
@@ -64,10 +62,6 @@ class TestToKernelSpec:
             ]
         )
 
-        # print(k_sklearn)
-        # print(str(k_autostat))
-        # print(str(to_kernel_spec(k_sklearn)))
-
         assert str(k_autostat) == str(to_kernel_spec(k_sklearn))
 
     def test_very_complex_composite_kernel(self):
@@ -80,10 +74,6 @@ class TestToKernelSpec:
                 PROD([PER(), ADD([PROD([RBF_spec()], 25), PROD([LIN()], 81)])], 64),
             ]
         )
-
-        # print(k_sklearn)
-        # print(str(k_autostat))
-        # print(str(to_kernel_spec(k_sklearn)))
 
         assert str(k_autostat) == str(to_kernel_spec(k_sklearn))
 
@@ -113,10 +103,6 @@ class TestToKernelSpec:
             ]
         )
 
-        # print(k_sklearn)
-        # print(str(k_autostat))
-        # print(str(to_kernel_spec(k_sklearn)))
-
         assert str(k_autostat) == str(to_kernel_spec(k_sklearn))
 
 
@@ -141,9 +127,6 @@ class TestSklearnToSpecAndBackRoundTrips_InnerSpecs:
 
     # def test_simple_product(self):
     #     k = 4 * RBF() * ExpSineSquared()
-
-    #     print(k)
-    #     print(build_kernel(to_kernel_spec(k)))
     #     assert k == build_kernel(to_kernel_spec(k))
 
     # def test_simple_composite_kernel(self):
@@ -171,9 +154,6 @@ class TestSpecToSklearnAndBackRoundTrips_CompleteSpecs:
         # [build_kernel(k) for k in starting_kernel_specs()]
 
         for k in starting_kernel_specs():
-            assert str(k) == str(to_kernel_spec(build_kernel(k)))
-
-
-# def test_other_base_kernels():
-#     spec = AdditiveKernelSpec(operands=[RBFKernelSpec(),LinearKernelSpec()])
-#     assert
+            built_kernel = build_kernel_additive(k)
+            unbuilt_kernel = to_kernel_spec(built_kernel)
+            assert str(k) == str(unbuilt_kernel)
