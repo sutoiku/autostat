@@ -20,5 +20,9 @@ setup_args = dict(
 
 install_requires = ["scikit-learn", "matplotlib", "numpy", "torch"]
 
+extras_require = {"dev": ["pytest", "black", "pytest-cov", "html-reports"]}
+
 if __name__ == "__main__":
-    setup(**setup_args, install_requires=install_requires)
+    setup(
+        **setup_args, install_requires=install_requires, extras_require=extras_require
+    )

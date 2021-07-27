@@ -1,5 +1,4 @@
-#  from multipledispatch import dispatch
-
+import time
 from typing import NamedTuple, Union, cast
 
 from matplotlib import pyplot as plt
@@ -12,6 +11,7 @@ from .kernel_tree_types import (
     AutoGpModel,
 )
 
+from .utils.logger import BasicLogger, Logger
 
 from .kernel_swaps import (
     KernelInitialValues,
@@ -67,8 +67,13 @@ def plot_model(model: AutoGpModel, data: Dataset):
 
 
 def score_kernel_spec(
-    kernel_spec: AdditiveKernelSpec, data: Dataset, model_class: type[AutoGpModel]
+    kernel_spec: AdditiveKernelSpec,
+    data: Dataset,
+    model_class: type[AutoGpModel],
+    logger: Logger = None,
 ) -> ScoredKernelInfo:
+    logger = logger or BasicLogger()
+    tic = time.perf_counter()
 
     model = model_class(kernel_spec, data)
 
@@ -82,11 +87,15 @@ def score_kernel_spec(
 
     fitted_spec = model.to_spec()
 
-    ax.set_title(
-        f"""{fitted_spec.spec_str(False,True)}
+    spec_str = f"""{fitted_spec.spec_str(False,True)}
 {fitted_spec.spec_str(False,False)} -- bic: {bic:.2f}, log likelihood: {log_likelihood:.3f}, M: {num_params}
 {fitted_spec.spec_str(True,True)}"""
-    )
+
+    ax.set_title(spec_str)
+
+    toc = time.perf_counter()
+    logger.print(f"**{fitted_spec.spec_str(False,True)}** -- fit in: {toc-tic:.3f} s")
+    logger.show(plt.gcf())
 
     return ScoredKernelInfo(
         kernel_spec.spec_str(False, False),
@@ -103,12 +112,15 @@ def score_kernel_specs(
     data: Dataset,
     model_class: type[AutoGpModel],
     kernel_scores: KernelScores,
+    logger: Logger = None,
 ) -> KernelScores:
+    logger = logger or BasicLogger()
+
     for spec in specs:
         spec_str = spec.spec_str(False, False)
         if spec_str in kernel_scores:
             continue
-        kernel_scores[spec_str] = score_kernel_spec(spec, data, model_class)
+        kernel_scores[spec_str] = score_kernel_spec(spec, data, model_class, logger)
     return kernel_scores
 
 
@@ -142,39 +154,54 @@ def get_best_kernel_info(
 def kernel_search(
     data: Dataset,
     model_class: type[AutoGpModel],
-    initial_kernels: list[AdditiveKernelSpec] = starting_kernel_specs(),
+    initial_kernels: list[AdditiveKernelSpec] = None,
     kernel_scores: KernelScores = None,
     search_iterations: int = 3,
+    logger: Logger = None,
 ) -> KernelScores:
-    kernel_scores = {} if kernel_scores is None else kernel_scores
+    # kernel_scores = {} if kernel_scores is None else kernel_scores
+    # logger = BasicLogger() if logger is None else logger
 
-    specs = initial_kernels
+    kernel_scores = kernel_scores or {}
+    logger = logger or BasicLogger()
+    best_model = None
+
     for i in range(search_iterations):
-        kernel_scores = score_kernel_specs(specs, data, model_class, kernel_scores)
+        tic = time.perf_counter()
+        logger.print(f"# DEPTH {i}")
+        if i == 0:
+            specs = initial_kernels or starting_kernel_specs()
+        else:
+            best_kernel_info = get_best_kernel_info(kernel_scores)
+            residuals = cast(AutoGpModel, best_kernel_info.model).residuals()
+            period = init_period_from_residuals(residuals)
+            initial_values = KernelInitialValues(period, np.sqrt(period / 2))
+            logger.print(f"### initial values from residuals:\n {str(initial_values)}")
+            specs = additive_subtree_swaps(best_kernel_info.spec_fitted, initial_values)
+
+        logger.print(f"### specs to check at depth {i}")
+        logger.print("\n".join(["* " + str(sp) for sp in specs]))
+
+        kernel_scores = score_kernel_specs(
+            specs, data, model_class, kernel_scores, logger
+        )
 
         best_kernel_info = get_best_kernel_info(kernel_scores)
 
         best_model = cast(AutoGpModel, best_kernel_info.model)
         best_fitted_spec = best_kernel_info.spec_fitted
 
-        best_kernel_str = f"""BEST ITER {i}:   {best_fitted_spec.spec_str(False,True)}  -- bic: {best_kernel_info.bic:.2f}, log likelihood: {best_kernel_info.log_likelihood:.3f}, M: {best_fitted_spec.num_params()}
+        best_kernel_str = f"""Best at depth {i}:   {best_fitted_spec.spec_str(False,True)}  -- bic: {best_kernel_info.bic:.2f}, log likelihood: {best_kernel_info.log_likelihood:.3f}, M: {best_fitted_spec.num_params()}
 {best_fitted_spec.spec_str(False,False)} 
 {best_fitted_spec.spec_str(True,True)}"""
 
-        print(best_kernel_str)
+        logger.print("## " + best_kernel_str)
 
         ax = plot_model(best_model, data)
         ax.set_title(best_kernel_str)
-        plt.show()
-
-        residuals = best_model.residuals()
-        period = init_period_from_residuals(residuals)
-        initial_values = KernelInitialValues(period, np.sqrt(period / 2))
-        print(f"--- initial values --- {str(initial_values)}")
-
-        specs = additive_subtree_swaps(best_kernel_info.spec_fitted, initial_values)
-        print("---specs next---")
-        print("\n".join([str(sp) for sp in specs]))
+        logger.show(plt.gcf())
+        toc = time.perf_counter()
+        logger.print(f"depth {i} complete in: {toc-tic:.3f} s")
 
     return kernel_scores
 
