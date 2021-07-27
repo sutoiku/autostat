@@ -42,11 +42,8 @@ class KernelSpec:
     def num_params(self) -> int:
         ...
 
-    def __str__(self) -> str:
-        return self.spec_str(True, True)
-
-    def __repr__(self) -> str:
-        return self.spec_str(True, False)
+    def fit_count(self) -> int:
+        ...
 
     def schema(self) -> str:
         return self.spec_str(False, False)
@@ -60,6 +57,12 @@ class KernelSpec:
     def _asdict(self) -> dict[str, Any]:
         return asdict(self)
 
+    def __str__(self) -> str:
+        return self.spec_str(True, True)
+
+    def __repr__(self) -> str:
+        return self.spec_str(True, False)
+
 
 @dataclass(frozen=True)
 class AdditiveKernelSpec(KernelSpec):
@@ -67,6 +70,9 @@ class AdditiveKernelSpec(KernelSpec):
 
     def num_params(self) -> int:
         return sum(op.num_params() for op in self.operands)
+
+    def fit_count(self) -> int:
+        return sum(op.fit_count() for op in self.operands)
 
     def spec_str(self, verbose=True, pretty=True) -> str:
         operandStrings = sorted(op.spec_str(verbose, pretty) for op in self.operands)
@@ -86,6 +92,10 @@ class ProductKernelSpec(KernelSpec):
     def num_params(self) -> int:
         # 1 for scalar, plus child params
         return 1 + sum(op.num_params() for op in self.operands)
+
+    def fit_count(self) -> int:
+        this_fit = 0 if self.scalar == 1 else 1
+        return sum(op.fit_count() for op in self.operands) + this_fit
 
     def spec_str(self, verbose=True, pretty=True) -> str:
         operandStrings = sorted(op.spec_str(verbose, pretty) for op in self.operands)
@@ -110,6 +120,9 @@ class RBFKernelSpec(KernelSpec):
     def num_params(self) -> int:
         return 1
 
+    def fit_count(self) -> int:
+        return 0 if self.length_scale == 1 else 1
+
     def spec_str(self, verbose=True, pretty=True) -> str:
         if verbose:
             return f"RBF(l={self.length_scale:.2f})"
@@ -125,9 +138,12 @@ class PeriodicKernelSpec(KernelSpec):
     def num_params(self) -> int:
         return 2
 
+    def fit_count(self) -> int:
+        return 0 if (self.length_scale == 1 and self.period == 1) else 1
+
     def spec_str(self, verbose=True, pretty=True) -> str:
         if verbose:
-            return f"PER(per={self.period:.2f},l={self.length_scale:.2f})"
+            return f"PER(per={self.period:.3f},l={self.length_scale:.2f})"
         else:
             return "PER"
 
@@ -139,6 +155,9 @@ class RQKernelSpec(KernelSpec):
 
     def num_params(self) -> int:
         return 2
+
+    def fit_count(self) -> int:
+        return 0 if (self.length_scale == 1 and self.alpha == 1) else 1
 
     def spec_str(self, verbose=True, pretty=True) -> str:
         if verbose:
@@ -154,6 +173,9 @@ class LinearKernelSpec(KernelSpec):
     def num_params(self) -> int:
         return 1
 
+    def fit_count(self) -> int:
+        return 0 if (self.variance == 1) else 1
+
     def spec_str(self, verbose=True, pretty=True) -> str:
         if verbose:
             return f"LIN(v={self.variance:.2f})"
@@ -164,9 +186,6 @@ class LinearKernelSpec(KernelSpec):
 BaseKernelSpec = Union[
     RBFKernelSpec, PeriodicKernelSpec, LinearKernelSpec, RQKernelSpec
 ]
-
-# def clone_spec(spec: KernelSpec, kwargs: dict = {}) -> KernelSpec:
-#     return spec.__class__({**spec._asdict(), **kwargs})
 
 
 NdGen = TypeVar("NdGen", torch.Tensor, np.ndarray)

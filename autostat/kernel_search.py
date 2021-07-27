@@ -157,10 +157,6 @@ def kernel_search(
         best_model = cast(AutoGpModel, best_kernel_info.model)
         best_fitted_spec = best_kernel_info.spec_fitted
 
-        residuals = best_model.residuals()
-        period = init_period_from_residuals(residuals)
-        initial_values = KernelInitialValues(period, np.sqrt(period / 2))
-
         best_kernel_str = f"""BEST ITER {i}:   {best_fitted_spec.spec_str(False,True)}  -- bic: {best_kernel_info.bic:.2f}, log likelihood: {best_kernel_info.log_likelihood:.3f}, M: {best_fitted_spec.num_params()}
 {best_fitted_spec.spec_str(False,False)} 
 {best_fitted_spec.spec_str(True,True)}"""
@@ -170,6 +166,11 @@ def kernel_search(
         ax = plot_model(best_model, data)
         ax.set_title(best_kernel_str)
         plt.show()
+
+        residuals = best_model.residuals()
+        period = init_period_from_residuals(residuals)
+        initial_values = KernelInitialValues(period, np.sqrt(period / 2))
+        print(f"--- initial values --- {str(initial_values)}")
 
         specs = additive_subtree_swaps(best_kernel_info.spec_fitted, initial_values)
         print("---specs next---")

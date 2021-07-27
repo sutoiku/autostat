@@ -48,7 +48,7 @@ def initialize_spec(
         )
 
     else:
-        return k.__class__()
+        return k.clone_update()
 
 
 def other_base_kernels(
@@ -76,7 +76,7 @@ GenericKernelSpecClasses = TypeVar(
 def sort_specs_by_type(
     kernels: list[GenericKernelSpecClasses],
 ) -> list[GenericKernelSpecClasses]:
-    return sorted(kernels, key=lambda node: node.spec_str(False, False))
+    return sorted(kernels, key=lambda node: node.spec_str(True, True))
 
 
 def sort_operand_list(
@@ -93,53 +93,68 @@ def sort_list_of_operand_lists(
     )
 
 
+def dedupe_kernels(
+    kernels: list[GenericKernelSpecClasses],
+) -> list[GenericKernelSpecClasses]:
+    subtree_dict: dict[str, GenericKernelSpecClasses] = {}
+    for k in kernels:
+        key = k.schema()
+        if (
+            key in subtree_dict and k.fit_count() > subtree_dict[key].fit_count()
+        ) or key not in subtree_dict:
+            subtree_dict[key] = k
+    return sort_specs_by_type(list(subtree_dict.values()))
+
+
 def simplify_additive_kernel_spec(kernel: AdditiveKernelSpec) -> AdditiveKernelSpec:
     # This function simplifies kernels like:
+    # (1)
     # `ADD([PROD(ADD([PROD(LIN), PROD(RBF)]))])`
     # down to e.g. `ADD([PROD(LIN), PROD(RBF)])`.
-    # I.e., sums of products with only one sum term in the product are simplified
-    # down to a single sum.
+    # (2)
+    # `ADD([PROD(ADD([PROD(LIN), PROD(RBF)])), PROD(RQ), PROD(PER)])`
+    # down to e.g. `ADD([PROD(LIN), PROD(RBF), PROD(RQ), PROD(PER)])`.
 
-    if len(kernel.operands) > 1:
-        # if this ADD has more than one PROD operand, return input kernel
-        return kernel
+    # given an ADD operator, for each operand (which must be PROD),
+    # check whether the PROD has only one ADD, and if it does,
+    # then push these inner ADDs back up to the parent add, adjusting
+    # scalars as needed
 
-    lone_product_kernel = kernel.operands[0]
+    # print(f"### simplify in : {str(kernel)}")
 
-    if len(lone_product_kernel.operands) > 1:
-        # if this PROD kernel has multiple operands, return input kernel
-        return kernel
+    final_summands: list[ProductKernelSpec] = []
 
-    lone_multiplicand = kernel.operands[0].operands[0]
+    for prod_op in kernel.operands:
 
-    if not isinstance(lone_multiplicand, AdditiveKernelSpec):
-        # if the inner kernel within the product is not a SUM, then it is
-        # the product of the base kernel with a scalar, so return the input
-        return kernel
+        if len(prod_op.operands) > 1:
+            # if this PROD kernel has multiple operands, append them as is
+            # this means that we DO NOT simplify ADD*ADD*... , ADD*X*... , X*X*...
+            # for any base kernel X (in these cases, simplification would require expanding products)
+            final_summands.append(prod_op.clone_update())
+        else:
+            lone_multiplicand = prod_op.operands[0]
+            if isinstance(lone_multiplicand, AdditiveKernelSpec):
+                # in this case:
+                # 1) this product kernel has only one multiplicand
+                # 2) this lone multiplicand is an additive kernel
+                # this being the case, it's valid to
+                # remove the middle product layer, and propogate its scalar
+                # down to the product terms below the second sum
+                outer_scalar = prod_op.scalar
+                inner_add = lone_multiplicand
+                final_summands += [
+                    summand.clone_update({"scalar": summand.scalar * outer_scalar})
+                    for summand in inner_add.operands
+                ]
+            else:
+                # if the inner kernel within the product is not a SUM, then it is
+                # the product of the base kernel with a scalar, so append as is
+                final_summands.append(prod_op.clone_update())
+    kernel_out = AdditiveKernelSpec(final_summands)
 
-    # if we've gotten this far, then:
-    # 1) this outer sum kernel has only one summand (which must be a PROD kernel),
-    # 2) this product kernel has only one multiplicand
-    # 3) this lone multiplicand is an additive kernel
-    # this being the case, it's valid to
-    # remove the middle product layer, and propogate its scalar
-    # down to the product terms below the second sum
+    # print(f"### simplify out: {str(kernel_out)}")
 
-    outer_scalar = lone_product_kernel.scalar
-
-    return AdditiveKernelSpec(
-        [
-            summand.clone_update({"scalar": summand.scalar * outer_scalar})
-            for summand in lone_multiplicand.operands
-        ]
-    )
-
-
-def dedupe_kernels(
-    kernel: list[GenericKernelSpecClasses],
-) -> list[GenericKernelSpecClasses]:
-    subtree_dict = {k.spec_str(False, False): k for k in kernel}
-    return sort_specs_by_type(list(subtree_dict.values()))
+    return kernel_out
 
 
 def product_wrapped_base_kernel(
@@ -163,14 +178,16 @@ def base_subtree_swaps(
     )
     # this base kernel with sums and products of all base kernels
     for bk in base_kernel_classes:
+        # all sums
         nodes_out.append(
             AdditiveKernelSpec(
                 [
-                    product_wrapped_base_kernel(node),
+                    product_wrapped_base_kernel(node.clone_update()),
                     product_wrapped_base_kernel(bk(), initial_vals),
                 ]
             )
         )
+        # all products
         nodes_out.append(ProductKernelSpec([node, initialize_spec(bk(), initial_vals)]))
     return dedupe_kernels(nodes_out)
 
@@ -272,4 +289,5 @@ def additive_subtree_swaps(
                 AdditiveKernelSpec(operands=before + [new_subtree] + after)
             )
 
-    return dedupe_kernels(nodes_out)
+    return dedupe_kernels([simplify_additive_kernel_spec(spec) for spec in nodes_out])
+    # return dedupe_kernels(nodes_out)
