@@ -25,3 +25,8 @@ An implementation of the Automatic Statistician algorithm
 - remove dependencies on gpytorch and sklearn (move to separate modules)
 
 - server
+
+### see:
+
+- https://github.com/jamesrobertlloyd/gpss-research
+- https://arxiv.org/pdf/1402.4304.pdf

@@ -233,7 +233,10 @@ class SklearnGPModel:
 
     def residuals(self) -> np.ndarray:
         yHat, _, _ = self.predict(self.data.train_x)
-        return self.data.train_y - yHat
+        yHat = yHat.flatten()
+        train_y = self.data.train_y.flatten()
+        residuals = train_y - yHat
+        return residuals
 
     def print_fitted_kernel(self):
         print(self.gp.kernel_)

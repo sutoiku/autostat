@@ -67,26 +67,62 @@ def load_mauna_torch():
     return train_x, test_x, train_y, test_y
 
 
-def scale_split(X, Y, split=0.2, rescale=True):
+def end_block_split(X, split):
+    N = round(max(X.shape) * (1 - split))
+    return X[:N], X[N:]
+
+
+def banded_split(X, end_prop=0.1, inner_prop=0.0, num_inner_test_bands=3):
+    # this function splits that data into test and train sets with a banded structure,
+    # having two test bands on each end (with a total proportion `end_prop` of data points)
+    # and `num_inner_test_bands` number of test intervals in the interior of the dataset
+
+    N = max(X.shape)
+    N_end_band = end_prop * N * 0.5
+    N_inner = N - 2 * N_end_band
+    N_inner_test = N_inner * inner_prop
+    N_inner_train = N_inner * (1 - inner_prop)
+    N_inner_test_band = N_inner_test / num_inner_test_bands
+    N_inner_train_band = N_inner_train / (num_inner_test_bands + 1)
+
+    split_indices = np.cumsum(
+        [
+            N_end_band,
+            *[N_inner_train_band, N_inner_test_band] * num_inner_test_bands,
+            N_inner_train_band,
+        ]
+    ).astype(int)
+
+    data_bands = np.split(X, split_indices)
+    train = np.concatenate(data_bands[1::2])
+    test = np.concatenate(data_bands[::2])
+
+    return train, test
+
+
+def scale_split(X, Y, split=0.2, rescale=True, banded=False):
     def scale(V):
         return MinMaxScaler((-1, 1)).fit_transform(V)
 
     X = X.reshape(-1, 1)
     Y = Y.reshape(-1, 1)
-    N = round(max(X.shape) * (1 - split))
     if rescale:
         X = scale(X)
         Y = scale(Y)
 
-    x_train, x_test = X[:N], X[N:]
-    y_train, y_test = Y[:N], Y[N:]
+    splitter = banded_split if banded else end_block_split
+
+    x_train, x_test = splitter(X, split)
+    y_train, y_test = splitter(Y, split)
 
     return x_train, x_test, y_train, y_test
 
 
-def load_mauna_numpy(plot=True, rescale=True):
+def load_mauna_numpy(plot=True, rescale=True, banded=False):
     X_raw, Y_raw = load_mauna_loa_atmospheric_co2()
-    x_train, x_test, y_train, y_test = scale_split(X_raw, Y_raw, rescale=rescale)
+    x_train, x_test, y_train, y_test = scale_split(
+        X_raw, Y_raw, rescale=rescale, banded=banded
+    )
     if plot:
         f, ax = plt.subplots(1, 1, figsize=(14, 4))
         ax.plot(x_train, y_train)

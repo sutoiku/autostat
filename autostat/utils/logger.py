@@ -18,3 +18,4 @@ class BasicLogger:
     def show(self, fig: Figure) -> None:
         plt.figure(fig.number)
         plt.show()
+        plt.close(plt.gcf())
