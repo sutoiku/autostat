@@ -20,7 +20,6 @@ from ..kernel_tree_types import (
 
 def test_other_base_kernels():
     assert other_base_kernels(RBF()) == [
-        RQ(),
         LIN(),
         PER(),
     ]
@@ -127,37 +126,26 @@ class TestBaseSubtreeSwaps:
     def test_simplest_case(self):
         assert base_subtree_swaps(RBF()) == sort_specs_by_type(
             [
-                RQ(),
                 LIN(),
                 PER(),
                 ADD([PROD([RBF()]), PROD([RBF()])]),
-                ADD([PROD([RBF()]), PROD([RQ()])]),
                 ADD([PROD([RBF()]), PROD([LIN()])]),
                 ADD([PROD([RBF()]), PROD([PER()])]),
                 PROD([RBF(), RBF()]),
-                PROD([RBF(), RQ()]),
                 PROD([RBF(), LIN()]),
                 PROD([RBF(), PER()]),
             ]
         )
 
     def test_with_params(self):
-        # print(
-        #     "\n\n".join(
-        #         str(x) for x in sort_specs_by_type(base_subtree_swaps(RBF(2.2)))
-        #     )
-        # )
         assert sort_specs_by_type(base_subtree_swaps(RBF(2.2))) == sort_specs_by_type(
             [
-                RQ(),
                 LIN(),
                 PER(),
                 ADD([PROD([RBF(2.2)]), PROD([RBF()])]),
-                ADD([PROD([RBF(2.2)]), PROD([RQ()])]),
                 ADD([PROD([RBF(2.2)]), PROD([LIN()])]),
                 ADD([PROD([RBF(2.2)]), PROD([PER()])]),
                 PROD([RBF(2.2), RBF()]),
-                PROD([RBF(2.2), RQ()]),
                 PROD([RBF(2.2), LIN()]),
                 PROD([RBF(2.2), PER()]),
             ]
@@ -167,19 +155,17 @@ class TestBaseSubtreeSwaps:
 class TestProductOperandSwaps:
     def test_simplest_case(self):
         swapped_operands = sort_list_of_operand_lists(
-            product_operand_swaps([RBF(), LIN(), RQ()], 0)
+            product_operand_swaps([RBF(), LIN(), PER()], 0)
         )
         target_operands = sort_list_of_operand_lists(
             [
                 # other base kernels swapped in for index kernels
-                [RQ(), LIN(), RQ()],
-                [LIN(), LIN(), RQ()],
-                [PER(), LIN(), RQ()],
+                [LIN(), LIN(), PER()],
+                [PER(), LIN(), PER()],
                 # all base kernels included with index kernel in sum
-                [ADD([PROD([RBF()]), PROD([RBF()])]), LIN(), RQ()],
-                [ADD([PROD([RBF()]), PROD([LIN()])]), LIN(), RQ()],
-                [ADD([PROD([RBF()]), PROD([PER()])]), LIN(), RQ()],
-                [ADD([PROD([RBF()]), PROD([RQ()])]), LIN(), RQ()],
+                [ADD([PROD([RBF()]), PROD([RBF()])]), LIN(), PER()],
+                [ADD([PROD([RBF()]), PROD([LIN()])]), LIN(), PER()],
+                [ADD([PROD([RBF()]), PROD([PER()])]), LIN(), PER()],
             ]
         )
         assert swapped_operands == target_operands
@@ -192,15 +178,12 @@ class TestProductSubtreeSwaps:
             [
                 # existing product with all base kernels appended
                 PROD([RBF(), RBF()]),
-                PROD([RBF(), RQ()]),
                 PROD([RBF(), LIN()]),
                 PROD([RBF(), PER()]),
                 # existing product with OTHER base kernels swapped in
-                PROD([RQ()]),
                 PROD([LIN()]),
                 PROD([PER()]),
                 PROD([ADD([PROD([RBF()]), PROD([RBF()])])]),
-                PROD([ADD([PROD([RBF()]), PROD([RQ()])])]),
                 PROD([ADD([PROD([RBF()]), PROD([LIN()])])]),
                 PROD([ADD([PROD([RBF()]), PROD([PER()])])]),
             ]

@@ -17,14 +17,12 @@ from .kernel_tree_types import (
     RBFKernelSpec,
     LinearKernelSpec,
     PeriodicKernelSpec,
-    RQKernelSpec,
     AutoGpModel,
 )
 
 
 base_kernel_classes: list[type[BaseKernelSpec]] = [
     RBFKernelSpec,
-    RQKernelSpec,
     LinearKernelSpec,
     PeriodicKernelSpec,
 ]
