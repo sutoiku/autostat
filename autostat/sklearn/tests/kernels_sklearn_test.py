@@ -11,7 +11,7 @@ from sklearn.gaussian_process.kernels import (
 )
 
 
-from ..kernel_tree_types import (
+from ...kernel_tree_types import (
     KernelSpec,
     Dataset,
     KernelSpec,
@@ -25,15 +25,11 @@ from ..kernel_tree_types import (
     ProductKernelSpec as PROD,
 )
 
-from ..kernel_swaps import base_kernel_classes
-from ..kernel_search import starting_kernel_specs
+from ...kernel_swaps import base_kernel_classes
+from ...kernel_search import starting_kernel_specs
 
-from ..kernel_trees_sklearn import (
-    build_kernel,
-    build_kernel_additive,
-    to_kernel_spec,
-    to_kernel_spec_inner,
-)
+from ..kernel_trees_sklearn import to_kernel_spec, to_kernel_spec_inner
+from ..kernel_builder import build_kernel, build_kernel_additive
 
 
 class TestBuildKernel:

@@ -1,7 +1,7 @@
 from collections import namedtuple
 import torch
 
-from sklearn.gaussian_process import GaussianProcessRegressor
+# from sklearn.gaussian_process import GaussianProcessRegressor
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
@@ -219,32 +219,6 @@ class ModelPredictions(NamedTuple):
     y: NDArray[np.float_]
     lower: NDArray[np.float_]
     upper: NDArray[np.float_]
-
-
-class AutoGpModel(Protocol):
-    def __init__(self, kernel_spec: KernelSpec, data: Dataset) -> None:
-        ...
-
-    def fit(self, data: Dataset) -> None:
-        ...
-
-    def predict(self, x: ArrayLike) -> ModelPredictions:
-        ...
-
-    def residuals(self) -> np.ndarray:
-        ...
-
-    def to_spec(self) -> AdditiveKernelSpec:
-        ...
-
-    def print_fitted_kernel(self) -> None:
-        ...
-
-    def bic(self) -> float:
-        ...
-
-    def log_likelihood(self) -> float:
-        ...
 
 
 # class GpytorchModel(NamedTuple):

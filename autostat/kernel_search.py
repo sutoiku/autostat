@@ -5,10 +5,10 @@ from matplotlib import pyplot as plt
 import numpy as np
 from numpy.fft import fft, fftfreq
 
+from .auto_gp_model import AutoGpModel
 from .kernel_tree_types import (
     Dataset,
     AdditiveKernelSpec,
-    AutoGpModel,
 )
 
 from .utils.logger import BasicLogger, Logger

@@ -6,8 +6,10 @@ An implementation of the Automatic Statistician algorithm
 
 - Kernels
 
-  - priors on kernels:
-    - period should be less than 1x data length
+  - priors / constraints on kernels:
+    - PER
+      - period should be less than 1x data length
+      - should be more than 2x min spacing between data points
     - some limit on length scale for smoothing kernels? -- smoothing kernels should NOT pick up non-stationarity in a signal, that should be captured by a non stationary (polynomial trend etc kernel) kernel
   - change point operator
   - non-stationary random walk-type kernels kernel?
@@ -30,3 +32,7 @@ An implementation of the Automatic Statistician algorithm
 
 - https://github.com/jamesrobertlloyd/gpss-research
 - https://arxiv.org/pdf/1402.4304.pdf
+
+#### constraints
+
+- want to pass down constraints and initial guesses, both based on data

@@ -17,8 +17,8 @@ from .kernel_tree_types import (
     RBFKernelSpec,
     LinearKernelSpec,
     PeriodicKernelSpec,
-    AutoGpModel,
 )
+from .auto_gp_model import AutoGpModel
 
 
 base_kernel_classes: list[type[BaseKernelSpec]] = [

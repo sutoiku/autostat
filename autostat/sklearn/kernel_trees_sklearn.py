@@ -1,4 +1,5 @@
-import typing as T
+from autostat.constraints import constraints_from_data
+import typing as ty
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
@@ -15,7 +16,7 @@ from sklearn.gaussian_process.kernels import (
     WhiteKernel,
 )
 
-from .kernel_tree_types import (
+from ..kernel_tree_types import (
     AdditiveKernelSpec,
     ArithmeticKernelSpec,
     Dataset,
@@ -29,59 +30,8 @@ from .kernel_tree_types import (
     RBFKernelSpec,
     RQKernelSpec,
 )
-from .math import calc_bic
-
-
-def build_kernel_additive(kernel_spec: AdditiveKernelSpec) -> T.Union[Sum, Product]:
-
-    inner = build_kernel(kernel_spec.operands[0])
-    if len(kernel_spec.operands) == 1:
-        return T.cast(Product, inner)
-
-    for product in kernel_spec.operands[1:-1]:
-        inner += build_kernel(product)
-    inner += build_kernel(kernel_spec.operands[-1])
-    return inner
-
-
-def build_kernel(kernel_spec: KernelSpec, top_level=False) -> Kernel:
-    if isinstance(kernel_spec, RBFKernelSpec):
-        inner = RBF(length_scale=kernel_spec.length_scale)
-
-    elif isinstance(kernel_spec, LinearKernelSpec):
-        inner = DotProduct(sigma_0=kernel_spec.variance)
-
-    elif isinstance(kernel_spec, PeriodicKernelSpec):
-        inner = ExpSineSquared(
-            length_scale=kernel_spec.length_scale,
-            periodicity=kernel_spec.period,
-        )
-
-    elif isinstance(kernel_spec, RQKernelSpec):
-        inner = RationalQuadratic(
-            length_scale=kernel_spec.length_scale, alpha=kernel_spec.alpha
-        )
-
-    elif isinstance(kernel_spec, AdditiveKernelSpec):
-        inner = build_kernel_additive(kernel_spec)
-
-    elif isinstance(kernel_spec, ProductKernelSpec):
-        # print("ProductKernelSpec: ", kernel_spec)
-        # print("ProductKernelSpec operands:", kernel_spec.operands)
-        inner = ConstantKernel(constant_value=kernel_spec.scalar)
-        # for i in range(0, len(kernel_spec.operands)):
-        for operand in kernel_spec.operands:
-            # print("ProductKernelSpec operand", operand)
-            inner *= build_kernel(operand, False)
-
-    else:
-        print("invalid kernel_spec type -- type(kernel_spec):", type(kernel_spec))
-        print(kernel_spec)
-        raise TypeError("Invalid kernel spec type")
-
-    inner = inner + WhiteKernel(noise_level=0.001) if top_level else inner
-
-    return inner
+from .kernel_builder import build_kernel
+from ..math import calc_bic
 
 
 def remove_nones(L: list) -> list:
@@ -139,7 +89,7 @@ def to_kernel_spec_product(kernel: Product) -> ProductKernelSpec:
             or isinstance(this_k, ExpSineSquared)
             or isinstance(this_k, DotProduct)
         ):
-            spec = T.cast(ProductOperandSpec, to_kernel_spec_inner(this_k))
+            spec = ty.cast(ProductOperandSpec, to_kernel_spec_inner(this_k))
             operands.append(spec)
         else:
             print("invalid kernel type for to_kernel_spec_product:", type(this_k))
@@ -180,7 +130,7 @@ def to_kernel_spec_inner(kernel: Kernel) -> KernelSpec:
     return inner
 
 
-def to_kernel_spec(kernel: T.Union[Sum, Product]) -> AdditiveKernelSpec:
+def to_kernel_spec(kernel: ty.Union[Sum, Product]) -> AdditiveKernelSpec:
     # NOTE: from sklearn, top level product specs (scalar times 1 or more base kernels)
     # will NOT be wrapped in an additive kernel
     inner_spec = to_kernel_spec_inner(kernel)
@@ -200,10 +150,11 @@ class SklearnGPModel:
     def __init__(self, kernel_spec: KernelSpec, data: Dataset, alpha=1e-7) -> None:
         self.kernel_spec = kernel_spec
         kernel = build_kernel(kernel_spec, top_level=True)
-        self.data = T.cast(NpDataSet, data)
+        self.data = ty.cast(NpDataSet, data)
         self.gp = GaussianProcessRegressor(
             kernel=kernel, alpha=alpha, normalize_y=False
         )
+        self.constraints = constraints_from_data(self.data)
 
     def fit(self, data: Dataset) -> None:
         self.gp.fit(data.train_x, data.train_y)
@@ -212,8 +163,8 @@ class SklearnGPModel:
         # print("\n")
 
     def log_likelihood(self) -> float:
-        k = T.cast(Kernel, self.gp.kernel_)
-        ll: float = T.cast(float, self.gp.log_marginal_likelihood(k.theta))
+        k = ty.cast(Kernel, self.gp.kernel_)
+        ll: float = ty.cast(float, self.gp.log_marginal_likelihood(k.theta))
         return ll
 
     def bic(self) -> float:
@@ -224,7 +175,7 @@ class SklearnGPModel:
         )
 
     def predict(self, x: ArrayLike) -> ModelPredictions:
-        y_pred, y_std = T.cast(
+        y_pred, y_std = ty.cast(
             tuple[NDArray[np.float_], NDArray[np.float_]],
             self.gp.predict(x, return_std=True),
         )
@@ -246,4 +197,4 @@ class SklearnGPModel:
         print(self.gp.kernel_)
 
     def to_spec(self) -> AdditiveKernelSpec:
-        return to_kernel_spec(T.cast(Sum, self.gp.kernel_))
+        return to_kernel_spec(ty.cast(Sum, self.gp.kernel_))
