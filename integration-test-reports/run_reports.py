@@ -13,7 +13,7 @@ from autostat.kernel_tree_types import (
     NpDataSet as NpDataSet,
 )
 
-from autostat.kernel_trees_sklearn import SklearnGPModel
+from autostat.sklearn.kernel_trees_sklearn import SklearnGPModel
 
 from datetime import datetime
 
@@ -85,15 +85,15 @@ def matlab_data_report_fn(file_path):
     return runner
 
 
-matlab_data_path = "/data/"
+matlab_data_path = "data/"
 
 files_sorted_by_size = [
     "01-airline.mat",
     "07-call-centre.mat",
-    "08-radio.mat",
-    "04-wheat.mat",
-    "02-solar.mat",
-    "11-unemployment.mat",
+    # "08-radio.mat",
+    # "04-wheat.mat",
+    # "02-solar.mat",
+    # "11-unemployment.mat",
     # "10-sulphuric.mat",
     # "09-gas-production.mat",
     # "03-mauna.mat",

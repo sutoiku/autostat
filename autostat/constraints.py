@@ -1,10 +1,16 @@
 from dataclasses import dataclass
 from typing import NamedTuple, Union
+import numpy as np
 from .kernel_tree_types import Dataset
 
 
-default_constraints = {
-    "PER": {"min_periods": 2, "min_data_points_per_period": 4},
+default_constraint_heuristics = {
+    "PER": {
+        "min_periods": 2,
+        "min_data_points_per_period": 5,
+        "max_length_scale_as_mult_of_max_period": 5,
+        "min_length_scale_as_mult_of_min_period": 0.5,
+    },
     "RBF": {},
     "LIN": {},
 }
@@ -18,9 +24,13 @@ class ConstraintBounds(NamedTuple):
 CB = ConstraintBounds
 
 
+def cb_default():
+    return ConstraintBounds(1e-5, 1e5)
+
+
 class PeriodicKernelConstraints(NamedTuple):
-    length_scale: Union[ConstraintBounds, None] = None
-    period: Union[ConstraintBounds, None] = None
+    length_scale: ConstraintBounds = cb_default()
+    period: ConstraintBounds = cb_default()
 
 
 @dataclass
@@ -28,15 +38,31 @@ class KernelConstraints:
     PER: PeriodicKernelConstraints
 
 
-def constraints_from_data(d: Dataset, constraints=None) -> KernelConstraints:
-    constraints = constraints or default_constraints
+def constraints_from_data(d: Dataset, heuristics=None) -> KernelConstraints:
+    heuristics = heuristics or default_constraint_heuristics
 
-    min_x_diff = d.train_x.diff().min()
-    periodicity_min = constraints["PER"]["min_data_points_per_period"] * min_x_diff
+    min_x_diff = np.diff(d.train_x.flatten()).min()
+    periodicity_min = heuristics["PER"]["min_data_points_per_period"] * min_x_diff
 
     x_range = d.train_x.max() - d.train_x.min()
-    periodicity_max = x_range / constraints["PER"]["min_periods"]
+    periodicity_max = x_range / heuristics["PER"]["min_periods"]
+
+    PER_length_scale_min = (
+        periodicity_min * heuristics["PER"]["min_length_scale_as_mult_of_min_period"]
+    )
+    PER_length_scale_max = (
+        periodicity_max * heuristics["PER"]["max_length_scale_as_mult_of_max_period"]
+    )
 
     return KernelConstraints(
-        PeriodicKernelConstraints(period=CB(periodicity_min, periodicity_max))
+        PeriodicKernelConstraints(
+            period=CB(periodicity_min, periodicity_max),
+            length_scale=CB(PER_length_scale_min, PER_length_scale_max),
+        )
+    )
+
+
+def default_constraints() -> KernelConstraints:
+    return KernelConstraints(
+        PeriodicKernelConstraints(period=cb_default(), length_scale=cb_default())
     )

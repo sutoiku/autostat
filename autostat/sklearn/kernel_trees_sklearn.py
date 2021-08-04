@@ -149,12 +149,13 @@ def to_kernel_spec(kernel: ty.Union[Sum, Product]) -> AdditiveKernelSpec:
 class SklearnGPModel:
     def __init__(self, kernel_spec: KernelSpec, data: Dataset, alpha=1e-7) -> None:
         self.kernel_spec = kernel_spec
-        kernel = build_kernel(kernel_spec, top_level=True)
         self.data = ty.cast(NpDataSet, data)
+        self.constraints = constraints_from_data(self.data)
+        kernel = build_kernel(kernel_spec, constraints=self.constraints, top_level=True)
+
         self.gp = GaussianProcessRegressor(
             kernel=kernel, alpha=alpha, normalize_y=False
         )
-        self.constraints = constraints_from_data(self.data)
 
     def fit(self, data: Dataset) -> None:
         self.gp.fit(data.train_x, data.train_y)

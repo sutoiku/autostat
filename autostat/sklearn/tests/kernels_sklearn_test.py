@@ -32,11 +32,6 @@ from ..kernel_trees_sklearn import to_kernel_spec, to_kernel_spec_inner
 from ..kernel_builder import build_kernel, build_kernel_additive
 
 
-class TestBuildKernel:
-    def test_starting_kernel_specs(self):
-        [build_kernel(k) for k in starting_kernel_specs()]
-
-
 class TestToKernelSpec:
     def test_one_term_product_kernel(self):
         k_sklearn = 22 * ExpSineSquared()
