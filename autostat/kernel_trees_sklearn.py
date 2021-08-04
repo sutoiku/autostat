@@ -1,7 +1,7 @@
 import typing as T
 
 import numpy as np
-from numpy.typing import ArrayLike
+from numpy.typing import ArrayLike, NDArray
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import (
     RBF,
@@ -225,13 +225,17 @@ class SklearnGPModel:
 
     def predict(self, x: ArrayLike) -> ModelPredictions:
         y_pred, y_std = T.cast(
-            tuple[np.ndarray, np.ndarray], self.gp.predict(x, return_std=True)
+            tuple[NDArray[np.float_], NDArray[np.float_]],
+            self.gp.predict(x, return_std=True),
         )
+
+        # y_pred, y_std = self.gp.predict(x, return_std=True)
+
         y_pred = y_pred.flatten()
         y_std = y_std.flatten()
         return ModelPredictions(y_pred, y_pred - 2 * y_std, y_pred + 2 * y_std)
 
-    def residuals(self) -> np.ndarray:
+    def residuals(self) -> NDArray[np.float_]:
         yHat, _, _ = self.predict(self.data.train_x)
         yHat = yHat.flatten()
         train_y = self.data.train_y.flatten()

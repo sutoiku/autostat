@@ -4,9 +4,9 @@ import torch
 from sklearn.gaussian_process import GaussianProcessRegressor
 
 import numpy as np
-from numpy.typing import ArrayLike
+from numpy.typing import ArrayLike, NDArray
 
-from typing import Any, Generic, NamedTuple, Union, Protocol, TypeVar, Type
+from typing import Any, Generic, NamedTuple, Union, Protocol, TypeVar, Type, Any
 from dataclasses import asdict, dataclass, astuple, field, replace
 
 
@@ -188,7 +188,7 @@ BaseKernelSpec = Union[
 ]
 
 
-NdGen = TypeVar("NdGen", torch.Tensor, np.ndarray)
+NdGen = TypeVar("NdGen", torch.Tensor, NDArray[np.float_])
 
 
 @dataclass
@@ -204,7 +204,7 @@ class DatasetGeneric(Generic[NdGen]):
         yield from astuple(self)
 
 
-class NpDataSet(DatasetGeneric[np.ndarray]):
+class NpDataSet(DatasetGeneric[NDArray[np.float_]]):
     ...
 
 
@@ -214,13 +214,11 @@ class TorchDataSet(DatasetGeneric[torch.Tensor]):
 
 Dataset = Union[TorchDataSet, NpDataSet]
 
-Dataseries = Union[torch.Tensor, ArrayLike]
-
 
 class ModelPredictions(NamedTuple):
-    y: np.ndarray
-    lower: np.ndarray
-    upper: np.ndarray
+    y: NDArray[np.float_]
+    lower: NDArray[np.float_]
+    upper: NDArray[np.float_]
 
 
 class AutoGpModel(Protocol):
@@ -261,10 +259,3 @@ class AutoGpModel(Protocol):
 
 
 # GPModel = Union[GpytorchModel, SklearnModel]
-
-
-class GPPrediction(NamedTuple):
-    x: ArrayLike
-    mean: ArrayLike
-    lower: ArrayLike
-    upper: ArrayLike
