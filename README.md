@@ -7,13 +7,8 @@ An implementation of the Automatic Statistician algorithm
 - Kernels
 
   - priors / constraints on kernels:
-    - PER
-      - period should be less than 1x data length
-      - should be more than 2x min spacing between data points
     - some limit on length scale for smoothing kernels? -- smoothing kernels should NOT pick up non-stationarity in a signal, that should be captured by a non stationary (polynomial trend etc kernel) kernel
   - change point operator
-  - non-stationary random walk-type kernels kernel?
-  - matern vs RBF
 
 - cross validation / overfitting
 
@@ -28,10 +23,17 @@ An implementation of the Automatic Statistician algorithm
 
 - server
 
+- periodic time series
+  - toeplitz matrix inversion for dense periodic series
+
 ### see:
 
 - https://github.com/jamesrobertlloyd/gpss-research
 - https://arxiv.org/pdf/1402.4304.pdf
+- https://papers.nips.cc/paper/2016/file/3bbfdde8842a5c44a0323518eec97cbe-Paper.pdf#cite.duvenaud_grammars
+  - hyperparam priors
+  - GP search over structures
+  - laplace approximation of model evidence
 
 #### constraints
 

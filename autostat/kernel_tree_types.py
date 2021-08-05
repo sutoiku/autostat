@@ -100,10 +100,10 @@ class ProductKernelSpec(KernelSpec):
     def spec_str(self, verbose=True, pretty=True) -> str:
         operandStrings = sorted(op.spec_str(verbose, pretty) for op in self.operands)
         if pretty:
-            scalar_str = f"{self.scalar:.2f} * " if verbose else ""
+            scalar_str = f"{self.scalar:.4f} * " if verbose else ""
             return scalar_str + " * ".join(operandStrings)
         else:
-            scalar_str = f"{self.scalar:.2f}, " if verbose else ""
+            scalar_str = f"{self.scalar:.4f}, " if verbose else ""
             return f"PROD({scalar_str}{', '.join(operandStrings)})"
 
     def clone_update(self, kwargs: dict[str, Any] = {}) -> "ProductKernelSpec":
@@ -125,7 +125,7 @@ class RBFKernelSpec(KernelSpec):
 
     def spec_str(self, verbose=True, pretty=True) -> str:
         if verbose:
-            return f"RBF(l={self.length_scale:.2f})"
+            return f"RBF(l={self.length_scale:.4f})"
         else:
             return "RBF"
 
@@ -143,7 +143,7 @@ class PeriodicKernelSpec(KernelSpec):
 
     def spec_str(self, verbose=True, pretty=True) -> str:
         if verbose:
-            return f"PER(per={self.period:.3f},l={self.length_scale:.2f})"
+            return f"PER(per={self.period:.4f},l={self.length_scale:.4f})"
         else:
             return "PER"
 
@@ -161,7 +161,7 @@ class RQKernelSpec(KernelSpec):
 
     def spec_str(self, verbose=True, pretty=True) -> str:
         if verbose:
-            return f"RQ(α={self.alpha:.2f},l={self.length_scale:.2f})"
+            return f"RQ(α={self.alpha:.4f},l={self.length_scale:.4f})"
         else:
             return "RQ"
 
@@ -178,7 +178,7 @@ class LinearKernelSpec(KernelSpec):
 
     def spec_str(self, verbose=True, pretty=True) -> str:
         if verbose:
-            return f"LIN(v={self.variance:.2f})"
+            return f"LIN(v={self.variance:.4f})"
         else:
             return "LIN"
 

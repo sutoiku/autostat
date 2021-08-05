@@ -74,7 +74,7 @@ def matlab_data_report_fn(file_path):
 
     def runner():
         train_x, test_x, train_y, test_y = scale_split(
-            np.array(data["X"]), np.array(data["y"])
+            np.array(data["X"]), np.array(data["y"]), split=0.01
         )
 
         d = NpDataSet(train_x, train_y, test_x, test_y)
@@ -89,7 +89,7 @@ matlab_data_path = "data/"
 
 files_sorted_by_size = [
     "01-airline.mat",
-    "07-call-centre.mat",
+    # "07-call-centre.mat",
     # "08-radio.mat",
     # "04-wheat.mat",
     # "02-solar.mat",

@@ -1,0 +1,233 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 11.1' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[      8353,        223]
+NotebookOptionsPosition[      7648,        198]
+NotebookOutlinePosition[      8017,        214]
+CellTagsIndexPosition[      7974,        211]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell[BoxData[
+ RowBox[{"Manipulate", "[", 
+  RowBox[{
+   RowBox[{"Plot3D", "[", 
+    RowBox[{
+     RowBox[{"Exp", "[", 
+      RowBox[{"-", 
+       FractionBox[
+        RowBox[{"2", " ", 
+         SuperscriptBox[
+          RowBox[{"Sin", "[", 
+           RowBox[{"\[Pi]", " ", 
+            RowBox[{
+             RowBox[{"Abs", "[", 
+              RowBox[{"d1", "-", "d2"}], "]"}], "/", " ", "p"}]}], "]"}], 
+          "2"]}], 
+        SuperscriptBox["l", "2"]]}], "]"}], ",", 
+     RowBox[{"{", 
+      RowBox[{"d1", ",", 
+       RowBox[{"-", "1"}], ",", "1"}], "}"}], ",", 
+     RowBox[{"{", 
+      RowBox[{"d2", ",", 
+       RowBox[{"-", "1"}], ",", "1"}], "}"}], ",", 
+     RowBox[{"PlotRange", "\[Rule]", 
+      RowBox[{"{", 
+       RowBox[{"0", ",", "1"}], "}"}]}]}], "]"}], ",", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{"p", ",", ".3"}], "}"}], ",", "0.00001", ",", "2"}], "}"}], ",", 
+   RowBox[{"{", 
+    RowBox[{"l", ",", "0.00001", ",", "10"}], "}"}]}], "]"}]], "Input",
+ CellChangeTimes->{{3.837085522100297*^9, 3.8370856415043383`*^9}, {
+  3.8370856847960176`*^9, 3.837085774385113*^9}, {3.837085820446272*^9, 
+  3.837085854397688*^9}, {3.837086405060728*^9, 3.837086412532387*^9}, {
+  3.8370864753733263`*^9, 
+  3.837086477624563*^9}},ExpressionUUID->"1b9050d1-2102-4491-a3c0-\
+28e169226dd5"],
+
+Cell[BoxData[
+ TagBox[
+  StyleBox[
+   DynamicModuleBox[{$CellContext`l$$ = 5.07, $CellContext`p$$ = 
+    0.9500000000000001, Typeset`show$$ = True, Typeset`bookmarkList$$ = {}, 
+    Typeset`bookmarkMode$$ = "Menu", Typeset`animator$$, Typeset`animvar$$ = 
+    1, Typeset`name$$ = "\"untitled\"", Typeset`specs$$ = {{{
+       Hold[$CellContext`p$$], 0.3}, 0.00001, 2}, {
+      Hold[$CellContext`l$$], 0.00001, 10}}, Typeset`size$$ = {
+    457., {153., 160.}}, Typeset`update$$ = 0, Typeset`initDone$$, 
+    Typeset`skipInitDone$$ = True, $CellContext`p$40045$$ = 
+    0, $CellContext`l$40046$$ = 0}, 
+    DynamicBox[Manipulate`ManipulateBoxes[
+     1, StandardForm, 
+      "Variables" :> {$CellContext`l$$ = 0.00001, $CellContext`p$$ = 0.3}, 
+      "ControllerVariables" :> {
+        Hold[$CellContext`p$$, $CellContext`p$40045$$, 0], 
+        Hold[$CellContext`l$$, $CellContext`l$40046$$, 0]}, 
+      "OtherVariables" :> {
+       Typeset`show$$, Typeset`bookmarkList$$, Typeset`bookmarkMode$$, 
+        Typeset`animator$$, Typeset`animvar$$, Typeset`name$$, 
+        Typeset`specs$$, Typeset`size$$, Typeset`update$$, Typeset`initDone$$,
+         Typeset`skipInitDone$$}, "Body" :> Plot3D[
+        Exp[-(2 
+          Sin[Pi (Abs[$CellContext`d1 - \
+$CellContext`d2]/$CellContext`p$$)]^2/$CellContext`l$$^2)], {$CellContext`d1, \
+-1, 1}, {$CellContext`d2, -1, 1}, PlotRange -> {0, 1}], 
+      "Specifications" :> {{{$CellContext`p$$, 0.3}, 0.00001, 
+         2}, {$CellContext`l$$, 0.00001, 10}}, "Options" :> {}, 
+      "DefaultOptions" :> {}],
+     ImageSizeCache->{525., {259., 266.}},
+     SingleEvaluation->True],
+    Deinitialization:>None,
+    DynamicModuleValues:>{},
+    SynchronousInitialization->True,
+    UndoTrackedVariables:>{Typeset`show$$, Typeset`bookmarkMode$$},
+    UnsavedVariables:>{Typeset`initDone$$},
+    UntrackedVariables:>{Typeset`size$$}], "Manipulate",
+   Deployed->True,
+   StripOnInput->False],
+  Manipulate`InterpretManipulate[1]]], "Output",
+ CellChangeTimes->{
+  3.837085775360035*^9, {3.8370858232475224`*^9, 3.837085854962852*^9}, 
+   3.837086413310031*^9, 
+   3.837086478527111*^9},ExpressionUUID->"d48a4949-432a-48eb-9a45-\
+3c460df93652"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"Manipulate", "[", 
+  RowBox[{
+   RowBox[{"ContourPlot", "[", 
+    RowBox[{
+     RowBox[{"Exp", "[", 
+      RowBox[{"-", 
+       FractionBox[
+        RowBox[{"2", " ", 
+         SuperscriptBox[
+          RowBox[{"Sin", "[", 
+           RowBox[{"\[Pi]", " ", 
+            RowBox[{
+             RowBox[{"Abs", "[", 
+              RowBox[{"d1", "-", "d2"}], "]"}], "/", " ", "p"}]}], "]"}], 
+          "2"]}], 
+        SuperscriptBox["l", "2"]]}], "]"}], ",", 
+     RowBox[{"{", 
+      RowBox[{"d1", ",", 
+       RowBox[{"-", "1"}], ",", "1"}], "}"}], ",", 
+     RowBox[{"{", 
+      RowBox[{"d2", ",", 
+       RowBox[{"-", "1"}], ",", "1"}], "}"}], ",", 
+     RowBox[{"PlotLegends", "\[Rule]", "Automatic"}], ",", 
+     RowBox[{"PlotRange", "\[Rule]", 
+      RowBox[{"{", 
+       RowBox[{
+        RowBox[{"-", "1"}], ",", "1"}], "}"}]}]}], "]"}], ",", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{"p", ",", ".3"}], "}"}], ",", "0.00001", ",", "2"}], "}"}], ",", 
+   RowBox[{"{", 
+    RowBox[{"l", ",", "0.00001", ",", "100"}], "}"}]}], "]"}]], "Input",
+ CellChangeTimes->{{3.837085983342366*^9, 3.837086039302876*^9}, {
+  3.837086082443684*^9, 3.837086110468986*^9}, {3.837086262067409*^9, 
+  3.837086262591586*^9}},ExpressionUUID->"3f9f3225-e75f-47e0-b01f-\
+37201211f327"],
+
+Cell[BoxData[
+ TagBox[
+  StyleBox[
+   DynamicModuleBox[{$CellContext`l$$ = 36.7, $CellContext`p$$ = 0.3, 
+    Typeset`show$$ = True, Typeset`bookmarkList$$ = {}, 
+    Typeset`bookmarkMode$$ = "Menu", Typeset`animator$$, Typeset`animvar$$ = 
+    1, Typeset`name$$ = "\"untitled\"", Typeset`specs$$ = {{{
+       Hold[$CellContext`p$$], 0.3}, 0.00001, 2}, {
+      Hold[$CellContext`l$$], 0.00001, 100}}, Typeset`size$$ = {
+    632., {262., 269.}}, Typeset`update$$ = 0, Typeset`initDone$$, 
+    Typeset`skipInitDone$$ = True, $CellContext`p$36201$$ = 
+    0, $CellContext`l$36202$$ = 0}, 
+    DynamicBox[Manipulate`ManipulateBoxes[
+     1, StandardForm, 
+      "Variables" :> {$CellContext`l$$ = 0.00001, $CellContext`p$$ = 0.3}, 
+      "ControllerVariables" :> {
+        Hold[$CellContext`p$$, $CellContext`p$36201$$, 0], 
+        Hold[$CellContext`l$$, $CellContext`l$36202$$, 0]}, 
+      "OtherVariables" :> {
+       Typeset`show$$, Typeset`bookmarkList$$, Typeset`bookmarkMode$$, 
+        Typeset`animator$$, Typeset`animvar$$, Typeset`name$$, 
+        Typeset`specs$$, Typeset`size$$, Typeset`update$$, Typeset`initDone$$,
+         Typeset`skipInitDone$$}, "Body" :> ContourPlot[
+        Exp[-(2 
+          Sin[Pi (Abs[$CellContext`d1 - \
+$CellContext`d2]/$CellContext`p$$)]^2/$CellContext`l$$^2)], {$CellContext`d1, \
+-1, 1}, {$CellContext`d2, -1, 1}, PlotLegends -> Automatic, 
+        PlotRange -> {-1, 1}], 
+      "Specifications" :> {{{$CellContext`p$$, 0.3}, 0.00001, 
+         2}, {$CellContext`l$$, 0.00001, 100}}, "Options" :> {}, 
+      "DefaultOptions" :> {}],
+     ImageSizeCache->{700., {336., 343.}},
+     SingleEvaluation->True],
+    Deinitialization:>None,
+    DynamicModuleValues:>{},
+    SynchronousInitialization->True,
+    UndoTrackedVariables:>{Typeset`show$$, Typeset`bookmarkMode$$},
+    UnsavedVariables:>{Typeset`initDone$$},
+    UntrackedVariables:>{Typeset`size$$}], "Manipulate",
+   Deployed->True,
+   StripOnInput->False],
+  Manipulate`InterpretManipulate[1]]], "Output",
+ CellChangeTimes->{3.8370860092494*^9, 3.837086040479589*^9, 
+  3.8370860928300753`*^9, 3.837086137266856*^9, 
+  3.837086263320106*^9},ExpressionUUID->"2aa736d3-9ae1-4daa-9d73-\
+72ce465eabeb"]
+}, Open  ]]
+},
+WindowSize->{1400, 1328},
+WindowMargins->{{Automatic, 481}, {Automatic, 284}},
+Magnification:>1.5 Inherited,
+FrontEndVersion->"11.1 for Linux x86 (64-bit) (April 18, 2017)",
+StyleDefinitions->"Default.nb"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[580, 22, 1326, 37, 132, "Input", "ExpressionUUID" -> \
+"1b9050d1-2102-4491-a3c0-28e169226dd5"],
+Cell[1909, 61, 2176, 45, 582, "Output", "ExpressionUUID" -> \
+"d48a4949-432a-48eb-9a45-3c460df93652"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[4122, 111, 1312, 37, 132, "Input", "ExpressionUUID" -> \
+"3f9f3225-e75f-47e0-b01f-37201211f327"],
+Cell[5437, 150, 2195, 45, 704, "Output", "ExpressionUUID" -> \
+"2aa736d3-9ae1-4daa-9d73-72ce465eabeb"]
+}, Open  ]]
+}
+]
+*)
+
+(* End of internal cache information *)
+

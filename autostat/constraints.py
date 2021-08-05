@@ -6,8 +6,8 @@ from .kernel_tree_types import Dataset
 
 default_constraint_heuristics = {
     "PER": {
-        "min_periods": 2,
-        "min_data_points_per_period": 5,
+        "min_periods": 5,
+        "min_data_points_per_period": 10,
         "max_length_scale_as_mult_of_max_period": 5,
         "min_length_scale_as_mult_of_min_period": 0.5,
     },
