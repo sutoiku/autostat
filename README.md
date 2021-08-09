@@ -9,6 +9,10 @@ An implementation of the Automatic Statistician algorithm
   - priors / constraints on kernels:
     - some limit on length scale for smoothing kernels? -- smoothing kernels should NOT pick up non-stationarity in a signal, that should be captured by a non stationary (polynomial trend etc kernel) kernel
   - change point operator
+  - SIMPLIFICATION:
+    - no sum of LIN
+    - remove components with coef less than some value
+    - prior on spacing of params for kernels of same type -- i.e., if RBF+RBF, length scales must differ by some amount (strong prior against close values), or if PER+PER, strong prior against similar periods
 
 - cross validation / overfitting
 
@@ -18,7 +22,6 @@ An implementation of the Automatic Statistician algorithm
 
 - parallelism
 - reimplement gpytorch
-- multiple data sets for integration test suite
 - remove dependencies on gpytorch and sklearn (move to separate modules)
 
 - server

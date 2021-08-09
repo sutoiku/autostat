@@ -13,7 +13,7 @@ from autostat.kernel_tree_types import (
     NpDataSet as NpDataSet,
 )
 
-from autostat.sklearn.kernel_trees_sklearn import SklearnGPModel
+from autostat.sklearn.model_wrapper import SklearnGPModel
 
 from datetime import datetime
 

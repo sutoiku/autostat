@@ -3,7 +3,6 @@ from sklearn.gaussian_process.kernels import (
     RBF,
     WhiteKernel,
     RationalQuadratic,
-    ExpSineSquared,
     ConstantKernel,
     DotProduct,
     Product,
@@ -36,8 +35,9 @@ from ...constraints import (
     default_constraints,
 )
 
-from ..kernel_trees_sklearn import to_kernel_spec, to_kernel_spec_inner
-from ..kernel_builder import build_kernel, build_kernel_additive
+# from ..to_kernel_spec import to_kernel_spec, to_kernel_spec_inner
+from ..kernel_builder import build_kernel
+from ..custom_periodic_kernel import PeriodicKernelNoConstant
 
 
 class TestBuildKernel:
@@ -47,7 +47,7 @@ class TestBuildKernel:
 
 class TestBuildKernelWithConstraints:
     def test_build_periodic_default_constraints(self):
-        k = ty.cast(ExpSineSquared, build_kernel(PER()))
+        k = ty.cast(PeriodicKernelNoConstant, build_kernel(PER()))
         assert tuple(k.hyperparameter_length_scale.bounds.flatten()) == cb_default()
         assert tuple(k.hyperparameter_periodicity.bounds.flatten()) == cb_default()
 
@@ -55,7 +55,7 @@ class TestBuildKernelWithConstraints:
         constraints = KernelConstraints(
             PeriodicKernelConstraints(length_scale=CB(10, 20), period=CB(0.5, 1.5))
         )
-        k = ty.cast(ExpSineSquared, build_kernel(PER(), constraints))
+        k = ty.cast(PeriodicKernelNoConstant, build_kernel(PER(), constraints))
         assert tuple(k.hyperparameter_length_scale.bounds.flatten()) == (10, 20)
         assert tuple(k.hyperparameter_periodicity.bounds.flatten()) == (0.5, 1.5)
 
@@ -68,6 +68,6 @@ class TestBuildKernelWithConstraints:
 
         k = build_kernel(spec, constraints)
 
-        k_PER = ty.cast(ExpSineSquared, k.k1.k2)
+        k_PER = ty.cast(PeriodicKernelNoConstant, k.k1.k2)
         assert tuple(k_PER.hyperparameter_length_scale.bounds.flatten()) == (10, 20)
         assert tuple(k_PER.hyperparameter_periodicity.bounds.flatten()) == (0.5, 1.5)

@@ -6,13 +6,14 @@ from sklearn.gaussian_process.kernels import (
     RBF,
     ConstantKernel,
     DotProduct,
-    ExpSineSquared,
     Kernel,
     Product,
     RationalQuadratic,
     Sum,
     WhiteKernel,
 )
+
+from .custom_periodic_kernel import PeriodicKernelNoConstant
 
 from ..kernel_tree_types import (
     AdditiveKernelSpec,
@@ -57,7 +58,7 @@ def build_kernel(
             "periodicity_bounds": constraints.PER.period,
             "length_scale_bounds": constraints.PER.length_scale,
         }
-        inner = ExpSineSquared(
+        inner = PeriodicKernelNoConstant(
             length_scale=kernel_spec.length_scale,
             periodicity=kernel_spec.period,
             **kwargs
