@@ -12,11 +12,6 @@ from sklearn.gaussian_process.kernels import (
 import typing as ty
 
 from ...kernel_tree_types import (
-    KernelSpec,
-    Dataset,
-    KernelSpec,
-    ArithmeticKernelSpec,
-    BaseKernelSpec,
     RBFKernelSpec as RBF_spec,
     RQKernelSpec as RQ,
     LinearKernelSpec as LIN,

@@ -7,9 +7,7 @@ import numpy as np
 from numpy.fft import fft, fftfreq
 
 from .kernel_tree_types import (
-    Dataset,
     KernelSpec,
-    ArithmeticKernelSpec,
     BaseKernelSpec,
     AdditiveKernelSpec,
     ProductKernelSpec,

@@ -1,5 +1,4 @@
-from dataclasses import dataclass
-from typing import NamedTuple, Union
+from typing import NamedTuple
 import numpy as np
 from .kernel_tree_types import Dataset
 
@@ -33,8 +32,7 @@ class PeriodicKernelConstraints(NamedTuple):
     period: ConstraintBounds = cb_default()
 
 
-@dataclass
-class KernelConstraints:
+class KernelConstraints(NamedTuple):
     PER: PeriodicKernelConstraints
 
 

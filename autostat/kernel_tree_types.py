@@ -1,12 +1,11 @@
 from collections import namedtuple
 import torch
 
-# from sklearn.gaussian_process import GaussianProcessRegressor
 
 import numpy as np
-from numpy.typing import ArrayLike, NDArray
+from numpy.typing import NDArray
 
-from typing import Any, Generic, NamedTuple, Union, Protocol, TypeVar, Type, Any
+from typing import Any, Generic, NamedTuple, Union, TypeVar, Any
 from dataclasses import asdict, dataclass, astuple, field, replace
 
 
@@ -14,11 +13,6 @@ from dataclasses import asdict, dataclass, astuple, field, replace
 # Each summand of an additive kernel is a product
 # each product has a scalar and one or more operands
 # product operands may be either base kernels or additive kernels
-
-# KernelSpec = Union["ArithmeticKernelSpec", "BaseKernelSpec"]
-
-ArithmeticKernelSpec = Union["AdditiveKernelSpec", "ProductKernelSpec"]
-
 
 ProductOperandSpec = Union[
     "RBFKernelSpec",
@@ -28,7 +22,7 @@ ProductOperandSpec = Union[
     "AdditiveKernelSpec",
 ]
 
-T = TypeVar("T", bound="KernelSpec")
+GenericKernelSpec = TypeVar("GenericKernelSpec", bound="KernelSpec")
 
 
 @dataclass(frozen=True)
@@ -48,7 +42,9 @@ class KernelSpec:
     def schema(self) -> str:
         return self.spec_str(False, False)
 
-    def clone_update(self: T, kwargs: dict[str, Any] = {}) -> T:
+    def clone_update(
+        self: GenericKernelSpec, kwargs: dict[str, Any] = {}
+    ) -> GenericKernelSpec:
         return replace(self, **kwargs)
 
     def __iter__(self):
