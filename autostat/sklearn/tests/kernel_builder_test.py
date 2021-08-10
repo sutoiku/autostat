@@ -61,7 +61,8 @@ class TestBuildKernelWithConstraints:
         spec = ADD([PROD([PER()], scalar=6), PROD([LIN()], scalar=13)])
 
         k = build_kernel(spec, constraints)
+        k.get_params()["k1__k2__periodicity_bounds"]
+        k.get_params()["k1__k2__length_scale_bounds"]
 
-        k_PER = ty.cast(PeriodicKernelNoConstant, k.k1.k2)
-        assert tuple(k_PER.hyperparameter_length_scale.bounds.flatten()) == (10, 20)
-        assert tuple(k_PER.hyperparameter_periodicity.bounds.flatten()) == (0.5, 1.5)
+        assert tuple(k.get_params()["k1__k2__length_scale_bounds"]) == (10, 20)
+        assert tuple(k.get_params()["k1__k2__periodicity_bounds"]) == (0.5, 1.5)

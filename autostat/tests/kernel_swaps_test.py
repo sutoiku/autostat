@@ -210,7 +210,7 @@ class TestDedupeKernels:
 
     def test_simplest_case_with_param_precedence(self):
         with_dupes = sort_specs_by_type(
-            [RBF(), PER(3, 5), RBF(), PER(), LIN(), RBF(4), RQ()]
+            [RBF(), PER(), PER(3, 5), RBF(), PER(), LIN(), RBF(4), RQ()]
         )
         without_dupes = sort_specs_by_type([RBF(4), PER(3, 5), LIN(), RQ()])
         assert dedupe_kernels(with_dupes) == without_dupes
