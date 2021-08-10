@@ -1,4 +1,5 @@
 from sklearn.gaussian_process.kernels import (
+    ExpSineSquared,
     Kernel,
     RBF,
     WhiteKernel,
@@ -15,6 +16,7 @@ from ...kernel_specs import (
     RQKernelSpec as RQ,
     LinearKernelSpec as LIN,
     PeriodicKernelSpec as PER,
+    PeriodicNoConstKernelSpec as PERnc,
     AdditiveKernelSpec as ADD,
     ProductKernelSpec as PROD,
 )
@@ -32,13 +34,19 @@ from ..custom_periodic_kernel import PeriodicKernelNoConstant
 class TestToKernelSpec:
     def test_one_term_product_kernel(self):
         k_sklearn = 22 * PeriodicKernelNoConstant()
+        k_autostat = ADD([PROD([PERnc()], 22)])
+
+        assert str(k_autostat) == str(to_kernel_spec(k_sklearn))
+
+    def test_one_term_product_kernel_2(self):
+        k_sklearn = 22 * ExpSineSquared()
         k_autostat = ADD([PROD([PER()], 22)])
 
         assert str(k_autostat) == str(to_kernel_spec(k_sklearn))
 
     def test_simple_composite_kernel(self):
         k_sklearn = (22 * RationalQuadratic()) + (44 * PeriodicKernelNoConstant())
-        k_autostat = ADD([PROD([RQ()], 22), PROD([PER()], 44)])
+        k_autostat = ADD([PROD([RQ()], 22), PROD([PERnc()], 44)])
         assert str(k_autostat) == str(to_kernel_spec(k_sklearn))
 
     def test_more_complex_composite_kernel(self):
@@ -46,7 +54,7 @@ class TestToKernelSpec:
 
         k_autostat = ADD(
             [
-                PROD([PER(), ADD([PROD([RBF_spec()], 25), PROD([LIN()], 81)])], 64),
+                PROD([PERnc(), ADD([PROD([RBF_spec()], 25), PROD([LIN()], 81)])], 64),
             ]
         )
 
@@ -59,7 +67,7 @@ class TestToKernelSpec:
         k_autostat = ADD(
             [
                 PROD([RQ(), LIN()], 16),
-                PROD([PER(), ADD([PROD([RBF_spec()], 25), PROD([LIN()], 81)])], 64),
+                PROD([PERnc(), ADD([PROD([RBF_spec()], 25), PROD([LIN()], 81)])], 64),
             ]
         )
 
@@ -78,7 +86,7 @@ class TestToKernelSpec:
                 PROD([RQ(alpha=3, length_scale=5), LIN(variance=7)], 16),
                 PROD(
                     [
-                        PER(length_scale=9, period=3),
+                        PERnc(length_scale=9, period=3),
                         ADD(
                             [
                                 PROD([RBF_spec(length_scale=13)], 25),

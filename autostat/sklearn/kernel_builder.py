@@ -11,6 +11,7 @@ from sklearn.gaussian_process.kernels import (
     RationalQuadratic,
     Sum,
     WhiteKernel,
+    ExpSineSquared,
 )
 
 from .custom_periodic_kernel import PeriodicKernelNoConstant
@@ -20,6 +21,7 @@ from ..kernel_specs import (
     KernelSpec,
     LinearKernelSpec,
     PeriodicKernelSpec,
+    PeriodicNoConstKernelSpec,
     ProductKernelSpec,
     RBFKernelSpec,
     RQKernelSpec,
@@ -53,12 +55,23 @@ def build_kernel(
     elif isinstance(kernel_spec, LinearKernelSpec):
         inner = DotProduct(sigma_0=kernel_spec.variance)
 
-    elif isinstance(kernel_spec, PeriodicKernelSpec):
+    elif isinstance(kernel_spec, PeriodicNoConstKernelSpec):
         kwargs = {
             "periodicity_bounds": constraints.PER.period,
             "length_scale_bounds": constraints.PER.length_scale,
         }
         inner = PeriodicKernelNoConstant(
+            length_scale=kernel_spec.length_scale,
+            periodicity=kernel_spec.period,
+            **kwargs
+        )
+
+    elif isinstance(kernel_spec, PeriodicKernelSpec):
+        kwargs = {
+            "periodicity_bounds": constraints.PER.period,
+            "length_scale_bounds": constraints.PER.length_scale,
+        }
+        inner = ExpSineSquared(
             length_scale=kernel_spec.length_scale,
             periodicity=kernel_spec.period,
             **kwargs

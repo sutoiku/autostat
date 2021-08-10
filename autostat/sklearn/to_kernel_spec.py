@@ -2,6 +2,7 @@ from autostat.constraints import constraints_from_data
 import typing as ty
 
 from sklearn.gaussian_process.kernels import (
+    ExpSineSquared,
     RBF,
     ConstantKernel,
     DotProduct,
@@ -17,6 +18,7 @@ from ..kernel_specs import (
     KernelSpec,
     LinearKernelSpec,
     PeriodicKernelSpec,
+    PeriodicNoConstKernelSpec,
     ProductKernelSpec,
     ProductOperandSpec,
     RBFKernelSpec,
@@ -79,6 +81,7 @@ def to_kernel_spec_product(kernel: Product) -> ProductKernelSpec:
             or isinstance(this_k, RationalQuadratic)
             or isinstance(this_k, PeriodicKernelNoConstant)
             or isinstance(this_k, DotProduct)
+            or isinstance(this_k, ExpSineSquared)
         ):
             spec = ty.cast(ProductOperandSpec, to_kernel_spec_inner(this_k))
             operands.append(spec)
@@ -99,8 +102,13 @@ def to_kernel_spec_inner(kernel: Kernel) -> KernelSpec:
         # inner = (sigma_0=kernel.variance)
         inner = LinearKernelSpec(variance=params["sigma_0"])
 
-    elif isinstance(kernel, PeriodicKernelNoConstant):
+    elif isinstance(kernel, ExpSineSquared):
         inner = PeriodicKernelSpec(
+            length_scale=params["length_scale"], period=params["periodicity"]
+        )
+
+    elif isinstance(kernel, PeriodicKernelNoConstant):
+        inner = PeriodicNoConstKernelSpec(
             length_scale=params["length_scale"], period=params["periodicity"]
         )
 

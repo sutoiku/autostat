@@ -7,6 +7,7 @@ from .kernel_specs import (
     RBFKernelSpec,
     LinearKernelSpec,
     PeriodicKernelSpec,
+    PeriodicNoConstKernelSpec,
 )
 
 from .kernel_swaps import addititive_base_term_with_scalar
@@ -16,6 +17,7 @@ base_kernel_classes: list[type[BaseKernelSpec]] = [
     RBFKernelSpec,
     LinearKernelSpec,
     PeriodicKernelSpec,
+    PeriodicNoConstKernelSpec,
 ]
 
 base_kernel_prototypes = list(c() for c in base_kernel_classes)

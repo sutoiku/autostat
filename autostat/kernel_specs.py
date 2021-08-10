@@ -90,6 +90,15 @@ class PeriodicKernelSpec(BaseKernelSpec):
 
 
 @dataclass(frozen=True)
+class PeriodicNoConstKernelSpec(BaseKernelSpec):
+    length_scale: float = 1
+    period: float = 1
+
+    kernel_name: InitVar[str] = "PERnc"
+    pp_replacements: InitVar[dict[str, str]] = {"length_scale": "l", "period": "p"}
+
+
+@dataclass(frozen=True)
 class RQKernelSpec(BaseKernelSpec):
     length_scale: float = 1
     alpha: float = 1

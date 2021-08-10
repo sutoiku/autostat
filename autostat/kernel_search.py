@@ -10,6 +10,7 @@ from .kernel_specs import (
     BaseKernelSpec,
     AdditiveKernelSpec,
     PeriodicKernelSpec,
+    PeriodicNoConstKernelSpec,
 )
 
 from .dataset_adapters import Dataset
@@ -140,7 +141,9 @@ def intialize_base_kernel_prototypes_from_residuals(
 ) -> list[BaseKernelSpec]:
     protos: list[BaseKernelSpec] = []
     for bk in base_kernel_prototypes:
-        if isinstance(bk, PeriodicKernelSpec):
+        if isinstance(bk, PeriodicKernelSpec) or isinstance(
+            bk, PeriodicNoConstKernelSpec
+        ):
             period = init_period_from_residuals(residuals)
             protos.append(
                 bk.clone_update({"period": period, "length_scale": period / 2})
