@@ -93,6 +93,8 @@ def dedupe_kernels(
     kernels: list[GenericKernelSpecClasses],
 ) -> list[GenericKernelSpecClasses]:
     subtree_dict: dict[str, GenericKernelSpecClasses] = {}
+    # for each kernel spec, keep the kernel matching that spec
+    # that has the greatest number of fitted params
     for k in kernels:
         key = k.schema()
         if (
