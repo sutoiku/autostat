@@ -1,31 +1,13 @@
-#  from multipledispatch import dispatch
-
 from typing import NamedTuple, TypeVar, Union, cast
 
-from matplotlib import pyplot as plt
-import numpy as np
-from numpy.fft import fft, fftfreq
-
 from .kernel_tree_types import (
-    Dataset,
     KernelSpec,
-    ArithmeticKernelSpec,
     BaseKernelSpec,
     AdditiveKernelSpec,
     ProductKernelSpec,
     ProductOperandSpec,
-    RBFKernelSpec,
-    LinearKernelSpec,
     PeriodicKernelSpec,
 )
-from .auto_gp_model import AutoGpModel
-
-
-base_kernel_classes: list[type[BaseKernelSpec]] = [
-    RBFKernelSpec,
-    LinearKernelSpec,
-    PeriodicKernelSpec,
-]
 
 
 class KernelInitialValues(NamedTuple):
@@ -50,7 +32,9 @@ def initialize_spec(
 
 
 def other_base_kernels(
-    kernel: BaseKernelSpec, init_vals: KernelInitialValues = KernelInitialValues()
+    kernel: BaseKernelSpec,
+    base_kernel_classes: list[type[BaseKernelSpec]],
+    init_vals: KernelInitialValues = KernelInitialValues(),
 ) -> list[BaseKernelSpec]:
     return [
         initialize_spec(k(), init_vals)
@@ -95,6 +79,8 @@ def dedupe_kernels(
     kernels: list[GenericKernelSpecClasses],
 ) -> list[GenericKernelSpecClasses]:
     subtree_dict: dict[str, GenericKernelSpecClasses] = {}
+    # for each kernel spec, keep the kernel matching that spec
+    # that has the greatest number of fitted params
     for k in kernels:
         key = k.schema()
         if (
@@ -167,12 +153,14 @@ def addititive_base_term_with_scalar(kernel: BaseKernelSpec) -> AdditiveKernelSp
 
 
 def base_subtree_swaps(
-    node: BaseKernelSpec, initial_vals: KernelInitialValues = KernelInitialValues()
+    node: BaseKernelSpec,
+    base_kernel_classes: list[type[BaseKernelSpec]],
+    initial_vals: KernelInitialValues = KernelInitialValues(),
 ) -> list[Union[BaseKernelSpec, AdditiveKernelSpec, ProductKernelSpec]]:
     # other base kernels
     nodes_out = cast(
         list[Union[BaseKernelSpec, AdditiveKernelSpec, ProductKernelSpec]],
-        other_base_kernels(node, initial_vals),
+        other_base_kernels(node, base_kernel_classes, initial_vals),
     )
     # this base kernel with sums and products of all base kernels
     for bk in base_kernel_classes:
@@ -193,6 +181,7 @@ def base_subtree_swaps(
 def product_operand_swaps(
     operands: list[ProductOperandSpec],
     index: int,
+    base_kernel_classes: list[type[BaseKernelSpec]],
     initial_vals: KernelInitialValues = KernelInitialValues(),
 ) -> list[list[ProductOperandSpec]]:
     # take a list of product operands and an index to a new
@@ -205,13 +194,15 @@ def product_operand_swaps(
     after = operands[index + 1 :]
     # in case of a Additive subkernel, recurse
     if isinstance(current, AdditiveKernelSpec):
-        new_subtrees = additive_subtree_swaps(current, initial_vals)
+        new_subtrees = additive_subtree_swaps(
+            current, base_kernel_classes, initial_vals
+        )
         for new_subtree in new_subtrees:
             operand_lists.append([*before, new_subtree, *after])
     else:
         # in this case, we have a base kernel
         # valid swaps of this base kernel for others
-        for bk in other_base_kernels(current, initial_vals):
+        for bk in other_base_kernels(current, base_kernel_classes, initial_vals):
             operand_lists.append([*before, bk, *after])
         # valid sums of this base with other base kernels
         for bk_type in base_kernel_classes:
@@ -228,6 +219,7 @@ def product_operand_swaps(
 
 def product_subtree_swaps(
     node: ProductKernelSpec,
+    base_kernel_classes: list[type[BaseKernelSpec]],
     initial_vals: KernelInitialValues = KernelInitialValues(),
 ) -> list[ProductKernelSpec]:
 
@@ -235,10 +227,12 @@ def product_subtree_swaps(
     scalar = node.scalar
 
     for i in range(len(node.operands)):
-        for operands in product_operand_swaps(node.operands, i, initial_vals):
+        for operands in product_operand_swaps(
+            node.operands, i, base_kernel_classes, initial_vals
+        ):
             nodes_out.append(ProductKernelSpec(operands=operands, scalar=scalar))
 
-    # # this product with all other base kernels included
+    # this product with all other base kernels included
     for bk_type in base_kernel_classes:
         nodes_out.append(
             ProductKernelSpec(
@@ -251,6 +245,7 @@ def product_subtree_swaps(
 
 def additive_subtree_swaps(
     node: AdditiveKernelSpec,
+    base_kernel_classes: list[type[BaseKernelSpec]],
     initial_vals: KernelInitialValues = KernelInitialValues(),
 ) -> list[AdditiveKernelSpec]:
 
@@ -281,7 +276,7 @@ def additive_subtree_swaps(
         current = node.operands[i]
         after = node.operands[i + 1 :]
         for new_subtree in product_subtree_swaps(
-            current, initial_vals=KernelInitialValues()
+            current, base_kernel_classes, initial_vals=KernelInitialValues()
         ):
             nodes_out.append(
                 AdditiveKernelSpec(operands=before + [new_subtree] + after)

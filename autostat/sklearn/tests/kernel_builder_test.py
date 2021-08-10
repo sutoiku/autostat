@@ -12,11 +12,6 @@ from sklearn.gaussian_process.kernels import (
 import typing as ty
 
 from ...kernel_tree_types import (
-    KernelSpec,
-    Dataset,
-    KernelSpec,
-    ArithmeticKernelSpec,
-    BaseKernelSpec,
     RBFKernelSpec as RBF_spec,
     RQKernelSpec as RQ,
     LinearKernelSpec as LIN,
@@ -25,8 +20,7 @@ from ...kernel_tree_types import (
     ProductKernelSpec as PROD,
 )
 
-from ...kernel_swaps import base_kernel_classes
-from ...kernel_search import starting_kernel_specs
+from ...run_settings import starting_kernel_specs, base_kernel_classes
 from ...constraints import (
     KernelConstraints,
     ConstraintBounds as CB,
@@ -42,7 +36,7 @@ from ..custom_periodic_kernel import PeriodicKernelNoConstant
 
 class TestBuildKernel:
     def test_starting_kernel_specs(self):
-        [build_kernel(k) for k in starting_kernel_specs()]
+        [build_kernel(k) for k in starting_kernel_specs(base_kernel_classes)]
 
 
 class TestBuildKernelWithConstraints:
