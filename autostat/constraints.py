@@ -1,6 +1,6 @@
 from typing import NamedTuple
 import numpy as np
-from .kernel_specs import Dataset
+from .dataset_adapters import Dataset
 
 
 default_constraint_heuristics = {

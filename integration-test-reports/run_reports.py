@@ -10,8 +10,8 @@ from autostat.utils.mauna_data_loader import load_mauna_numpy, scale_split
 
 from autostat.kernel_search import kernel_search
 
-from autostat.kernel_specs import (
-    NpDataSet as NpDataSet,
+from autostat.dataset_adapters import (
+    NpDataSet,
 )
 
 from autostat.sklearn.model_wrapper import SklearnGPModel

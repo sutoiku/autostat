@@ -13,11 +13,9 @@ from .to_kernel_spec import to_kernel_spec
 
 from ..kernel_specs import (
     AdditiveKernelSpec,
-    Dataset,
     KernelSpec,
-    ModelPredictions,
-    NpDataSet,
 )
+from ..dataset_adapters import Dataset, NpDataSet, ModelPredictions
 from .kernel_builder import build_kernel
 from ..math import calc_bic
 
@@ -26,7 +24,7 @@ class SklearnGPModel:
     def __init__(self, kernel_spec: KernelSpec, data: Dataset, alpha=1e-7) -> None:
         self.kernel_spec = kernel_spec
         self.data = ty.cast(NpDataSet, data)
-        self.constraints = constraints_from_data(self.data)
+        self.constraints = constraints_from_data(data)
         kernel = build_kernel(kernel_spec, constraints=self.constraints, top_level=True)
 
         self.gp = GaussianProcessRegressor(

@@ -8,10 +8,11 @@ from numpy.fft import fft, fftfreq
 from .auto_gp_model import AutoGpModel
 from .kernel_specs import (
     BaseKernelSpec,
-    Dataset,
     AdditiveKernelSpec,
     PeriodicKernelSpec,
 )
+
+from .dataset_adapters import Dataset
 
 from .utils.logger import BasicLogger, Logger
 

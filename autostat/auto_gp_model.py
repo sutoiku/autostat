@@ -3,7 +3,8 @@ from numpy.typing import ArrayLike, NDArray
 
 from typing import Protocol
 
-from .kernel_specs import KernelSpec, AdditiveKernelSpec, Dataset, ModelPredictions
+from .kernel_specs import KernelSpec, AdditiveKernelSpec
+from .dataset_adapters import Dataset, ModelPredictions
 from .constraints import KernelConstraints
 
 

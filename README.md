@@ -32,8 +32,7 @@ An implementation of the Automatic Statistician algorithm
 
   - toeplitz matrix inversion for dense periodic series
 
-- CLEAN UP
-  - clean up implementation of kernelSpecTypes to use shared fit_count and spec_str implementations (unless overridden) by accessing field names and checking for defaults; add PER2 to kernels list
+- add PER2 to kernels list, un-hardcode PERspec -> sklearnPerNoConst
 
 ### see:
 

@@ -11,7 +11,6 @@ from sklearn.gaussian_process.kernels import (
 
 
 from ...kernel_specs import (
-    Dataset,
     RBFKernelSpec as RBF_spec,
     RQKernelSpec as RQ,
     LinearKernelSpec as LIN,
@@ -19,6 +18,9 @@ from ...kernel_specs import (
     AdditiveKernelSpec as ADD,
     ProductKernelSpec as PROD,
 )
+
+# from ...dataset_adapters import Dataset, NpDataSet, ModelPredictions
+
 
 from ...run_settings import starting_kernel_specs, base_kernel_classes
 
