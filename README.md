@@ -34,9 +34,6 @@ An implementation of the Automatic Statistician algorithm
 
 - CLEAN UP
   - clean up implementation of kernelSpecTypes to use shared fit_count and spec_str implementations (unless overridden) by accessing field names and checking for defaults; add PER2 to kernels list
-  - remove
-    - initialize_spec
-    - GenericKernelSpecClasses
 
 ### see:
 

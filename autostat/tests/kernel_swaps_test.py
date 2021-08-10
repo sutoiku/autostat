@@ -17,11 +17,13 @@ from ..kernel_specs import (
     ProductKernelSpec as PROD,
 )
 
-from ..run_settings import base_kernel_classes
+from ..run_settings import base_kernel_prototypes
+
+# base_kernel_prototypes = [c() for c in base_kernel_classes]
 
 
 def test_other_base_kernels():
-    assert other_base_kernels(RBF(), base_kernel_classes) == [
+    assert other_base_kernels(RBF(), base_kernel_prototypes) == [
         LIN(),
         PER(),
     ]
@@ -126,7 +128,7 @@ class TestSimplifyAdditiveKernel:
 
 class TestBaseSubtreeSwaps:
     def test_simplest_case(self):
-        assert base_subtree_swaps(RBF(), base_kernel_classes) == sort_specs_by_type(
+        assert base_subtree_swaps(RBF(), base_kernel_prototypes) == sort_specs_by_type(
             [
                 LIN(),
                 PER(),
@@ -141,7 +143,7 @@ class TestBaseSubtreeSwaps:
 
     def test_with_params(self):
         assert sort_specs_by_type(
-            base_subtree_swaps(RBF(2.2), base_kernel_classes)
+            base_subtree_swaps(RBF(2.2), base_kernel_prototypes)
         ) == sort_specs_by_type(
             [
                 LIN(),
@@ -159,7 +161,7 @@ class TestBaseSubtreeSwaps:
 class TestProductOperandSwaps:
     def test_simplest_case(self):
         swapped_operands = sort_list_of_operand_lists(
-            product_operand_swaps([RBF(), LIN(), PER()], 0, base_kernel_classes)
+            product_operand_swaps([RBF(), LIN(), PER()], 0, base_kernel_prototypes)
         )
         target_operands = sort_list_of_operand_lists(
             [
@@ -177,7 +179,7 @@ class TestProductOperandSwaps:
 
 class TestProductSubtreeSwaps:
     def test_simplest_case(self):
-        swapped_kernels = product_subtree_swaps(PROD([RBF()]), base_kernel_classes)
+        swapped_kernels = product_subtree_swaps(PROD([RBF()]), base_kernel_prototypes)
         target_kernels = sort_specs_by_type(
             [
                 # existing product with all base kernels appended

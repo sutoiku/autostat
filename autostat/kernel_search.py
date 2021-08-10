@@ -7,14 +7,15 @@ from numpy.fft import fft, fftfreq
 
 from .auto_gp_model import AutoGpModel
 from .kernel_specs import (
+    BaseKernelSpec,
     Dataset,
     AdditiveKernelSpec,
+    PeriodicKernelSpec,
 )
 
 from .utils.logger import BasicLogger, Logger
 
 from .kernel_swaps import (
-    KernelInitialValues,
     additive_subtree_swaps,
 )
 
@@ -133,6 +134,21 @@ def init_period_from_residuals(residuals: np.ndarray) -> float:
     return 1 / xf[np.abs(yf) == max(np.abs(yf))][0]
 
 
+def intialize_base_kernel_prototypes_from_residuals(
+    residuals, base_kernel_prototypes: list[BaseKernelSpec]
+) -> list[BaseKernelSpec]:
+    protos: list[BaseKernelSpec] = []
+    for bk in base_kernel_prototypes:
+        if isinstance(bk, PeriodicKernelSpec):
+            period = init_period_from_residuals(residuals)
+            protos.append(
+                bk.clone_update({"period": period, "length_scale": period / 2})
+            )
+        else:
+            protos.append(bk.clone_update())
+    return protos
+
+
 def get_best_kernel_name_and_info(
     kernel_scores: KernelScores,
 ) -> tuple[str, ScoredKernelInfo]:
@@ -167,13 +183,14 @@ def kernel_search(
         else:
             best_kernel_info = get_best_kernel_info(kernel_scores)
             residuals = cast(AutoGpModel, best_kernel_info.model).residuals()
-            period = init_period_from_residuals(residuals)
-            initial_values = KernelInitialValues(period, np.sqrt(period / 2))
-            logger.print(f"### initial values from residuals:\n {str(initial_values)}")
+            base_kernel_prototypes = intialize_base_kernel_prototypes_from_residuals(
+                residuals, run_settings.base_kernel_prototypes
+            )
+            proto_str = "\n".join(str(k) for k in base_kernel_prototypes)
+            logger.print(f"### prototpy kernels from residuals:\n {proto_str}")
             specs = additive_subtree_swaps(
                 best_kernel_info.spec_fitted,
-                run_settings.base_kernel_classes,
-                initial_values,
+                base_kernel_prototypes,
             )
 
         logger.print(f"### specs to check at depth {i}")
@@ -218,5 +235,4 @@ def find_best_kernel_and_predict(
     best_kernel_info = get_best_kernel_info(kernel_scores)
 
     best_model = cast(AutoGpModel, best_kernel_info.model)
-    # best_fitted_spec = best_kernel_info.spec_fitted
     return best_model.predict(data.test_x)
