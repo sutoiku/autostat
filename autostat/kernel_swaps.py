@@ -1,6 +1,6 @@
 from typing import NamedTuple, TypeVar, Union, cast
 
-from .kernel_tree_types import (
+from .kernel_specs import (
     KernelSpec,
     BaseKernelSpec,
     AdditiveKernelSpec,

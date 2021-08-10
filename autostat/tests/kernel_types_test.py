@@ -1,4 +1,4 @@
-from ..kernel_tree_types import (
+from ..kernel_specs import (
     RBFKernelSpec as RBF,
     RQKernelSpec as RQ,
     LinearKernelSpec as LIN,

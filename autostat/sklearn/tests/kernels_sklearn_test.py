@@ -10,7 +10,7 @@ from sklearn.gaussian_process.kernels import (
 )
 
 
-from ...kernel_tree_types import (
+from ...kernel_specs import (
     Dataset,
     RBFKernelSpec as RBF_spec,
     RQKernelSpec as RQ,

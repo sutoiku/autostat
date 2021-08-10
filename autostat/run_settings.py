@@ -1,7 +1,7 @@
 import typing as ty
 
 from .constraints import KernelConstraints, default_constraints
-from .kernel_tree_types import (
+from .kernel_specs import (
     AdditiveKernelSpec,
     BaseKernelSpec,
     RBFKernelSpec,

@@ -8,7 +8,7 @@ from ..kernel_swaps import (
     base_subtree_swaps,
     simplify_additive_kernel_spec,
 )
-from ..kernel_tree_types import (
+from ..kernel_specs import (
     RBFKernelSpec as RBF,
     RQKernelSpec as RQ,
     LinearKernelSpec as LIN,

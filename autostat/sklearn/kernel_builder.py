@@ -15,7 +15,7 @@ from sklearn.gaussian_process.kernels import (
 
 from .custom_periodic_kernel import PeriodicKernelNoConstant
 
-from ..kernel_tree_types import (
+from ..kernel_specs import (
     AdditiveKernelSpec,
     KernelSpec,
     LinearKernelSpec,
