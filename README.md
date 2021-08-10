@@ -46,7 +46,3 @@ An implementation of the Automatic Statistician algorithm
   - hyperparam priors
   - GP search over structures
   - laplace approximation of model evidence
-
-#### constraints
-
-- want to pass down constraints and initial guesses, both based on data

@@ -7,6 +7,7 @@ from .kernel_tree_types import (
     ProductKernelSpec,
     ProductOperandSpec,
     PeriodicKernelSpec,
+    GenericKernelSpec,
 )
 
 
@@ -43,42 +44,30 @@ def other_base_kernels(
     ]
 
 
-GenericKernelSpecClasses = TypeVar(
-    "GenericKernelSpecClasses",
-    bound=Union[
-        KernelSpec,
-        BaseKernelSpec,
-        "AdditiveKernelSpec",
-        "ProductKernelSpec",
-        ProductOperandSpec,
-    ],
-)
-
-
 def sort_specs_by_type(
-    kernels: list[GenericKernelSpecClasses],
-) -> list[GenericKernelSpecClasses]:
+    kernels: list[GenericKernelSpec],
+) -> list[GenericKernelSpec]:
     return sorted(kernels, key=lambda node: node.spec_str(True, True))
 
 
 def sort_operand_list(
-    operands: list[GenericKernelSpecClasses],
-) -> list[GenericKernelSpecClasses]:
+    operands: list[GenericKernelSpec],
+) -> list[GenericKernelSpec]:
     return sorted(operands, key=lambda operand: operand.spec_str(False, False))
 
 
 def sort_list_of_operand_lists(
-    operand_lists: list[list[GenericKernelSpecClasses]],
-) -> list[list[GenericKernelSpecClasses]]:
+    operand_lists: list[list[GenericKernelSpec]],
+) -> list[list[GenericKernelSpec]]:
     return sorted(
         operand_lists, key=lambda operand_list: str(sort_operand_list(operand_list))
     )
 
 
 def dedupe_kernels(
-    kernels: list[GenericKernelSpecClasses],
-) -> list[GenericKernelSpecClasses]:
-    subtree_dict: dict[str, GenericKernelSpecClasses] = {}
+    kernels: list[GenericKernelSpec],
+) -> list[GenericKernelSpec]:
+    subtree_dict: dict[str, GenericKernelSpec] = {}
     # for each kernel spec, keep the kernel matching that spec
     # that has the greatest number of fitted params
     for k in kernels:
