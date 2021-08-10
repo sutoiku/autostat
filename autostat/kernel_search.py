@@ -16,9 +16,9 @@ from .utils.logger import BasicLogger, Logger
 from .kernel_swaps import (
     KernelInitialValues,
     additive_subtree_swaps,
-    base_kernel_classes,
-    addititive_base_term_with_scalar,
 )
+
+from .run_settings import RunSettings
 
 
 class ScoredKernelInfo(NamedTuple):
@@ -133,10 +133,6 @@ def init_period_from_residuals(residuals: np.ndarray) -> float:
     return 1 / xf[np.abs(yf) == max(np.abs(yf))][0]
 
 
-def starting_kernel_specs() -> list[AdditiveKernelSpec]:
-    return [addititive_base_term_with_scalar(k()) for k in base_kernel_classes]
-
-
 def get_best_kernel_name_and_info(
     kernel_scores: KernelScores,
 ) -> tuple[str, ScoredKernelInfo]:
@@ -154,30 +150,31 @@ def get_best_kernel_info(
 def kernel_search(
     data: Dataset,
     model_class: type[AutoGpModel],
-    initial_kernels: list[AdditiveKernelSpec] = None,
     kernel_scores: KernelScores = None,
-    search_iterations: int = 3,
+    run_settings: RunSettings = RunSettings(),
     logger: Logger = None,
 ) -> KernelScores:
-    # kernel_scores = {} if kernel_scores is None else kernel_scores
-    # logger = BasicLogger() if logger is None else logger
 
     kernel_scores = kernel_scores or {}
     logger = logger or BasicLogger()
     best_model = None
 
-    for i in range(search_iterations):
+    for i in range(run_settings.max_search_depth):
         tic = time.perf_counter()
         logger.print(f"# DEPTH {i}")
         if i == 0:
-            specs = initial_kernels or starting_kernel_specs()
+            specs = run_settings.initial_kernels
         else:
             best_kernel_info = get_best_kernel_info(kernel_scores)
             residuals = cast(AutoGpModel, best_kernel_info.model).residuals()
             period = init_period_from_residuals(residuals)
             initial_values = KernelInitialValues(period, np.sqrt(period / 2))
             logger.print(f"### initial values from residuals:\n {str(initial_values)}")
-            specs = additive_subtree_swaps(best_kernel_info.spec_fitted, initial_values)
+            specs = additive_subtree_swaps(
+                best_kernel_info.spec_fitted,
+                run_settings.base_kernel_classes,
+                initial_values,
+            )
 
         logger.print(f"### specs to check at depth {i}")
         logger.print("\n".join(["* " + str(sp) for sp in specs]))
@@ -209,16 +206,14 @@ def kernel_search(
 def find_best_kernel_and_predict(
     data: Dataset,
     model_class: type[AutoGpModel],
-    initial_kernels: list[AdditiveKernelSpec] = starting_kernel_specs(),
     kernel_scores: KernelScores = None,
-    search_iterations: int = 3,
+    run_settings: RunSettings = RunSettings(),
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     kernel_scores = kernel_search(
         data,
         model_class,
-        initial_kernels,
         kernel_scores,
-        search_iterations,
+        run_settings,
     )
     best_kernel_info = get_best_kernel_info(kernel_scores)
 

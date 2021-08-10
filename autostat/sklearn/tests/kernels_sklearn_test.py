@@ -20,8 +20,7 @@ from ...kernel_tree_types import (
     ProductKernelSpec as PROD,
 )
 
-from ...kernel_swaps import base_kernel_classes
-from ...kernel_search import starting_kernel_specs
+from ...run_settings import starting_kernel_specs, base_kernel_classes
 
 from ..to_kernel_spec import to_kernel_spec, to_kernel_spec_inner
 from ..kernel_builder import build_kernel, build_kernel_additive
@@ -140,7 +139,7 @@ class TestSpecToSklearnAndBackRoundTrips_CompleteSpecs:
     def test_starting_kernel_specs(self):
         # [build_kernel(k) for k in starting_kernel_specs()]
 
-        for k in starting_kernel_specs():
+        for k in starting_kernel_specs(base_kernel_classes):
             built_kernel = build_kernel_additive(k)
             unbuilt_kernel = to_kernel_spec(built_kernel)
             assert str(k) == str(unbuilt_kernel)

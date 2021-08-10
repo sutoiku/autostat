@@ -9,8 +9,10 @@ An implementation of the Automatic Statistician algorithm
   - priors / constraints on kernels:
     - some limit on length scale for smoothing kernels? -- smoothing kernels should NOT pick up non-stationarity in a signal, that should be captured by a non stationary (polynomial trend etc kernel) kernel
   - change point operator
-  - SIMPLIFICATION:
+
+  - Kernel SIMPLIFICATION:
     - no sum of LIN
+    - no product of RBF
     - remove components with coef less than some value
     - prior on spacing of params for kernels of same type -- i.e., if RBF+RBF, length scales must differ by some amount (strong prior against close values), or if PER+PER, strong prior against similar periods
 
@@ -27,7 +29,14 @@ An implementation of the Automatic Statistician algorithm
 - server
 
 - periodic time series
+
   - toeplitz matrix inversion for dense periodic series
+
+- CLEAN UP
+  - clean up implementation of kernelSpecTypes to use shared fit_count and spec_str implementations (unless overridden) by accessing field names and checking for defaults; add PER2 to kernels list
+  - remove
+    - initialize_spec
+    - GenericKernelSpecClasses
 
 ### see:
 
