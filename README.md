@@ -10,7 +10,7 @@ An implementation of the Automatic Statistician algorithm
     - some limit on length scale for smoothing kernels? -- smoothing kernels should NOT pick up non-stationarity in a signal, that should be captured by a non stationary (polynomial trend etc kernel) kernel
   - change point operator
 
-  - Kernel SIMPLIFICATION:
+  - Kernel SIMPLIFICATIONS:
     - no sum of LIN
     - no product of RBF
     - remove components with coef less than some value
@@ -31,8 +31,6 @@ An implementation of the Automatic Statistician algorithm
 - periodic time series
 
   - toeplitz matrix inversion for dense periodic series
-
-- add PER2 to kernels list, un-hardcode PERspec -> sklearnPerNoConst
 
 ### see:
 

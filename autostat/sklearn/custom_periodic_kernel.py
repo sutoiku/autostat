@@ -5,7 +5,7 @@ from sklearn.gaussian_process.kernels import (
     Hyperparameter,
 )
 
-from scipy.special import iv
+from scipy.special import iv, ive
 
 import numpy as np
 
@@ -93,6 +93,7 @@ class PeriodicKernelNoConstant(StationaryKernelMixin, NormalizedKernelMixin, Ker
         p = self.periodicity
 
         one_over_lsqr = 1 / (l ** 2)
+        print("one_over_lsqr", one_over_lsqr)
         exp_one_over_lsqr = np.exp(one_over_lsqr)
 
         bess_0 = iv(0, one_over_lsqr)
@@ -102,27 +103,32 @@ class PeriodicKernelNoConstant(StationaryKernelMixin, NormalizedKernelMixin, Ker
         cos_two_period_dist = np.cos(two_period_dist)
         exp_scaled_dists = np.exp(one_over_lsqr * cos_two_period_dist)
 
-        # arg = np.pi * dists / self.periodicity
-        # sin_of_arg = np.sin(arg)
-        # K = np.exp(-2 * (sin_of_arg / self.length_scale) ** 2)
-
         K = (exp_scaled_dists - bess_0) / (exp_one_over_lsqr - bess_0)
 
         if eval_gradient:
             # gradient with respect to length_scale
             if not self.hyperparameter_length_scale.fixed:
-                bess_1 = iv(1, one_over_lsqr)
-                length_scale_gradient = (
-                    -2
-                    * exp_one_over_lsqr
-                    * (
-                        bess_0
-                        - bess_1
-                        - exp_scaled_dists
-                        + exp_scaled_dists * np.cos(period_dist)
+                # NOTE: were deviating from the matlab source:
+                #  https://github.com/jamesrobertlloyd/gpss-research/blob/master/source/gpml/cov/covPeriodicNoDC.m
+                # because comparison with finite differences suggested that
+                # having a specialized version for (1/l**2) < 3.75 performed
+                # worse than using this single implementation in all cases
+
+                e_bess_0 = ive(0, one_over_lsqr)
+                e_bess_1 = ive(1, one_over_lsqr)
+
+                numerator = 2 * (
+                    -e_bess_0
+                    + e_bess_1
+                    + (
+                        np.exp(-2 * one_over_lsqr * np.sin(period_dist) ** 2)
+                        * (1 - e_bess_1 + (e_bess_0 - 1) * cos_two_period_dist)
                     )
-                    - 2 * exp_scaled_dists * (bess_1 - bess_0 * cos_two_period_dist)
-                ) / ((bess_0 - exp_one_over_lsqr) ** 2 * l ** 3)
+                )
+                denominator = (e_bess_0 - 1) ** 2 * l ** 3
+
+                length_scale_gradient = numerator / denominator
+
                 length_scale_gradient = length_scale_gradient[:, :, np.newaxis]
             else:  # length_scale is kept fixed
                 length_scale_gradient = np.empty((K.shape[0], K.shape[1], 0))

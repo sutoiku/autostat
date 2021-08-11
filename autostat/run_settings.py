@@ -17,7 +17,6 @@ base_kernel_classes: list[type[BaseKernelSpec]] = [
     RBFKernelSpec,
     LinearKernelSpec,
     PeriodicKernelSpec,
-    PeriodicNoConstKernelSpec,
 ]
 
 base_kernel_prototypes = list(c() for c in base_kernel_classes)
