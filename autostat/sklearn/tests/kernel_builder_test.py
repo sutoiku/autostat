@@ -20,7 +20,7 @@ from ...kernel_specs import (
     ProductKernelSpec as PROD,
 )
 
-from ...run_settings import starting_kernel_specs, base_kernel_classes
+from ...run_settings import starting_kernel_specs, default_base_kernel_classes
 from ...constraints import (
     KernelConstraints,
     ConstraintBounds as CB,
@@ -36,7 +36,7 @@ from ..custom_periodic_kernel import PeriodicKernelNoConstant
 
 class TestBuildKernel:
     def test_starting_kernel_specs(self):
-        [build_kernel(k) for k in starting_kernel_specs(base_kernel_classes)]
+        [build_kernel(k) for k in starting_kernel_specs(default_base_kernel_classes)]
 
 
 class TestBuildKernelWithConstraints:

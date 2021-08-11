@@ -1,4 +1,4 @@
-from autostat.run_settings import RunSettings
+from autostat.run_settings import init_run_settings_from_shorthand_args
 from autostat.utils.logger import Logger
 from html_reports import Report
 import matplotlib.pyplot as plt
@@ -108,7 +108,11 @@ if __name__ == "__main__":
     print("starting report")
     # run_report_fn("Mauna Loa", run_mauna_loa)
     # run_report_fn("Air passengers", run_air_passengers)
-    run_settings = RunSettings()
+    run_settings = init_run_settings_from_shorthand_args(
+        base_kernel_shortnames=["PERnc", "LIN", "RBF"]
+    )
+    # print(str(run_settings))
+    logger.print(str(run_settings))
     for file in files_sorted_by_num_data_points:
         run_report_fn(
             file, matlab_data_report_fn(matlab_data_path + file), run_settings

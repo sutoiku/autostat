@@ -24,7 +24,7 @@ from ...kernel_specs import (
 # from ...dataset_adapters import Dataset, NpDataSet, ModelPredictions
 
 
-from ...run_settings import starting_kernel_specs, base_kernel_classes
+from ...run_settings import starting_kernel_specs, default_base_kernel_classes
 
 from ..to_kernel_spec import to_kernel_spec, to_kernel_spec_inner
 from ..kernel_builder import build_kernel, build_kernel_additive
@@ -132,7 +132,7 @@ class TestSklearnToSpecAndBackRoundTrips_InnerSpecs:
 
 class TestSpecToSklearnAndBackRoundTrips_InnerSpecs:
     def test_base_kernels(self):
-        for k in base_kernel_classes:
+        for k in default_base_kernel_classes:
             assert str(k()) == str(to_kernel_spec_inner(build_kernel(k())))
 
     def test_parameterized_base_kernels(self):
@@ -149,7 +149,7 @@ class TestSpecToSklearnAndBackRoundTrips_CompleteSpecs:
     def test_starting_kernel_specs(self):
         # [build_kernel(k) for k in starting_kernel_specs()]
 
-        for k in starting_kernel_specs(base_kernel_classes):
+        for k in starting_kernel_specs(default_base_kernel_classes):
             built_kernel = build_kernel_additive(k)
             unbuilt_kernel = to_kernel_spec(built_kernel)
             assert str(k) == str(unbuilt_kernel)

@@ -191,7 +191,7 @@ def kernel_search(
                 residuals, run_settings.base_kernel_prototypes
             )
             proto_str = "\n".join(str(k) for k in base_kernel_prototypes)
-            logger.print(f"### prototpy kernels from residuals:\n {proto_str}")
+            logger.print(f"### prototype kernels from residuals:\n {proto_str}")
             specs = additive_subtree_swaps(
                 best_kernel_info.spec_fitted,
                 base_kernel_prototypes,
