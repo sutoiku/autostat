@@ -19,8 +19,6 @@ from ..kernel_specs import (
 
 from ..run_settings import base_kernel_prototypes
 
-# base_kernel_prototypes = [c() for c in base_kernel_classes]
-
 
 def test_other_base_kernels():
     assert other_base_kernels(RBF(), base_kernel_prototypes) == [

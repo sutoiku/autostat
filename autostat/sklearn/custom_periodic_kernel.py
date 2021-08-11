@@ -93,7 +93,6 @@ class PeriodicKernelNoConstant(StationaryKernelMixin, NormalizedKernelMixin, Ker
         p = self.periodicity
 
         one_over_lsqr = 1 / (l ** 2)
-        print("one_over_lsqr", one_over_lsqr)
         exp_one_over_lsqr = np.exp(one_over_lsqr)
 
         bess_0 = iv(0, one_over_lsqr)
