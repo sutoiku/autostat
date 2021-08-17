@@ -18,7 +18,6 @@ from autostat.sklearn.model_wrapper import SklearnGPModel
 
 from datetime import datetime
 
-import csv
 import numpy as np
 
 import os
@@ -89,7 +88,7 @@ def matlab_data_report_fn(file_path):
 matlab_data_path = "data/"
 
 files_sorted_by_num_data_points = [
-    "01-airline.mat",
+    # "01-airline.mat",
     # "07-call-centre.mat",
     # "08-radio.mat",
     # "04-wheat.mat",
@@ -97,7 +96,7 @@ files_sorted_by_num_data_points = [
     # "11-unemployment.mat",
     # "10-sulphuric.mat",
     # "09-gas-production.mat",
-    # "03-mauna.mat",
+    "03-mauna.mat",
     # "13-wages.mat",
     # "06-internet.mat",
     # "05-temperature.mat",
@@ -109,7 +108,7 @@ if __name__ == "__main__":
     # run_report_fn("Mauna Loa", run_mauna_loa)
     # run_report_fn("Air passengers", run_air_passengers)
     run_settings = init_run_settings_from_shorthand_args(
-        base_kernel_shortnames=["PERnc", "LIN", "RBF"]
+        base_kernel_shortnames=["PER", "LIN", "RBF"], max_search_depth=2
     )
     # print(str(run_settings))
     logger.print(str(run_settings))

@@ -4,7 +4,15 @@ An implementation of the Automatic Statistician algorithm
 
 ### to do / roadmap
 
+- DECOMPOSITION
+
+  - error per component
+  - spec_to_additive
+    - once fitted, can construct new kernel matrices easily (independently of GP implementations if needed)
+
 - Kernels
+
+  - expand to additive form
 
   - priors / constraints on kernels:
     - some limit on length scale for smoothing kernels? -- smoothing kernels should NOT pick up non-stationarity in a signal, that should be captured by a non stationary (polynomial trend etc kernel) kernel
@@ -17,10 +25,6 @@ An implementation of the Automatic Statistician algorithm
     - prior on spacing of params for kernels of same type -- i.e., if RBF+RBF, length scales must differ by some amount (strong prior against close values), or if PER+PER, strong prior against similar periods
 
 - cross validation / overfitting
-
-- decomposition
-
-  - error per component
 
 - parallelism
 - reimplement gpytorch
@@ -40,3 +44,5 @@ An implementation of the Automatic Statistician algorithm
   - hyperparam priors
   - GP search over structures
   - laplace approximation of model evidence
+- https://arxiv.org/pdf/1302.4922.pdf
+  - posterior decomposition: see note in appendix

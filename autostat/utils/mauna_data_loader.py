@@ -118,10 +118,35 @@ def scale_split(X, Y, split=0.2, rescale=True, banded=False):
     return x_train, x_test, y_train, y_test
 
 
-def load_mauna_numpy(plot=True, rescale=True, banded=False):
-    X_raw, Y_raw = load_mauna_loa_atmospheric_co2()
+# def load_mauna_numpy(plot=True, rescale=True, banded=False, split=0.2):
+#     X_raw, Y_raw = load_mauna_loa_atmospheric_co2()
+#     x_train, x_test, y_train, y_test = scale_split(
+#         X_raw,
+#         Y_raw,
+#         rescale=rescale,
+#         banded=banded,
+#         split=split,
+#     )
+#     if plot:
+#         f, ax = plt.subplots(1, 1, figsize=(14, 4))
+#         ax.plot(x_train, y_train)
+#         ax.plot(x_test, y_test)
+#     return x_train, x_test, y_train, y_test
+
+import scipy.io as io
+
+
+def load_mauna_numpy(plot=True, rescale=True, banded=False, split=0.2):
+    data = io.loadmat(
+        "/home/bc/STOIC/time_series_forecasts/autostat/integration-test-reports/data/03-mauna.mat"
+    )
+    X_raw, Y_raw = np.array(data["X"]), np.array(data["y"])
     x_train, x_test, y_train, y_test = scale_split(
-        X_raw, Y_raw, rescale=rescale, banded=banded
+        X_raw,
+        Y_raw,
+        rescale=rescale,
+        banded=banded,
+        split=split,
     )
     if plot:
         f, ax = plt.subplots(1, 1, figsize=(14, 4))

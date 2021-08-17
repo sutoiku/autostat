@@ -28,7 +28,7 @@ class SklearnGPModel:
         kernel = build_kernel(kernel_spec, constraints=self.constraints, top_level=True)
 
         self.gp = GaussianProcessRegressor(
-            kernel=kernel, alpha=alpha, normalize_y=False
+            kernel=kernel, alpha=alpha, normalize_y=False, n_restarts_optimizer=3
         )
 
     def fit(self, data: Dataset) -> None:
