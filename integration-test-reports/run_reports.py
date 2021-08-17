@@ -108,7 +108,7 @@ if __name__ == "__main__":
     # run_report_fn("Mauna Loa", run_mauna_loa)
     # run_report_fn("Air passengers", run_air_passengers)
     run_settings = init_run_settings_from_shorthand_args(
-        base_kernel_shortnames=["PER", "LIN", "RBF"], max_search_depth=2
+        base_kernel_shortnames=["PERnc", "LIN", "RBF"], max_search_depth=2
     )
     # print(str(run_settings))
     logger.print(str(run_settings))

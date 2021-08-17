@@ -92,58 +92,57 @@ class PeriodicKernelNoConstant(StationaryKernelMixin, NormalizedKernelMixin, Ker
         l = self.length_scale
         p = self.periodicity
 
-        one_over_lsqr = 1 / (l ** 2)
-        exp_one_over_lsqr = np.exp(one_over_lsqr)
-
-        bess_0 = iv(0, one_over_lsqr)
+        e_bess_0 = ive(0, 1 / l ** 2)
 
         period_dist = (dists * np.pi) / p
-        two_period_dist = 2 * period_dist
-        cos_two_period_dist = np.cos(two_period_dist)
-        exp_scaled_dists = np.exp(one_over_lsqr * cos_two_period_dist)
 
-        K = (exp_scaled_dists - bess_0) / (exp_one_over_lsqr - bess_0)
+        S = -2 * np.sin(period_dist) ** 2
+        exp_S_over_lsqr = np.exp(S / l ** 2)
+
+        K = (e_bess_0 - exp_S_over_lsqr) / (e_bess_0 - 1)
 
         if eval_gradient:
             # gradient with respect to length_scale
             if not self.hyperparameter_length_scale.fixed:
-                # NOTE: were deviating from the matlab source:
+                # NOTE: we're deviating from the matlab source:
                 #  https://github.com/jamesrobertlloyd/gpss-research/blob/master/source/gpml/cov/covPeriodicNoDC.m
                 # because comparison with finite differences suggested that
                 # having a specialized version for (1/l**2) < 3.75 performed
                 # worse than using this single implementation in all cases
 
-                e_bess_0 = ive(0, one_over_lsqr)
-                e_bess_1 = ive(1, one_over_lsqr)
+                e_bess_1 = ive(1, 1 / l ** 2)
 
                 numerator = 2 * (
                     -e_bess_0
                     + e_bess_1
-                    + (
-                        np.exp(-2 * one_over_lsqr * np.sin(period_dist) ** 2)
-                        * (1 - e_bess_1 + (e_bess_0 - 1) * cos_two_period_dist)
-                    )
+                    + exp_S_over_lsqr * (1 - e_bess_1 + (e_bess_0 - 1) * (1 + S))
                 )
+
                 denominator = (e_bess_0 - 1) ** 2 * l ** 3
 
                 length_scale_gradient = numerator / denominator
-
                 length_scale_gradient = length_scale_gradient[:, :, np.newaxis]
+
             else:  # length_scale is kept fixed
                 length_scale_gradient = np.empty((K.shape[0], K.shape[1], 0))
+
             # gradient with respect to p
             if not self.hyperparameter_periodicity.fixed:
-                periodicity_gradient = (
-                    exp_scaled_dists
-                    * one_over_lsqr
-                    * two_period_dist
-                    * np.sin(two_period_dist)
-                ) / (p * (exp_one_over_lsqr - bess_0))
+
+                numerator = (
+                    2 * dists * exp_S_over_lsqr * np.pi * np.sin(2 * period_dist)
+                )
+
+                denominator = (e_bess_0 - 1) * (l * p) ** 2
+
+                periodicity_gradient = -numerator / denominator
                 periodicity_gradient = periodicity_gradient[:, :, np.newaxis]
+
             else:  # p is kept fixed
                 periodicity_gradient = np.empty((K.shape[0], K.shape[1], 0))
 
             return K, np.dstack((length_scale_gradient, periodicity_gradient))
+
         else:
             return K
 
