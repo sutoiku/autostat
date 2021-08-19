@@ -68,7 +68,7 @@ def get_kernel_class_short_name_mapping() -> dict[str, BaseKernelSpec]:
 
 
 def init_run_settings_from_shorthand_args(
-    base_kernel_shortnames: list[str], max_search_depth: int = 5
+    base_kernel_shortnames: list[str], max_search_depth: int = 5, **kwargs
 ) -> RunSettings:
 
     kernel_class_short_name_mapping = get_kernel_class_short_name_mapping()
@@ -88,4 +88,5 @@ def init_run_settings_from_shorthand_args(
         initial_kernels=starting_kernel_specs(base_kernel_classes),
         base_kernel_prototypes=kernel_prototypes_from_classes(base_kernel_classes),
         max_search_depth=max_search_depth,
+        **kwargs,
     )

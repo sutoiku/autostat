@@ -26,14 +26,12 @@ from ..kernel_specs import (
     RBFKernelSpec,
     RQKernelSpec,
     TopLevelKernelSpec,
-    WhiteKernelSpec,
 )
 
 
 def build_kernel_additive(
-    kernel_spec: AdditiveKernelSpec, constraints: KernelConstraints = None
+    kernel_spec: AdditiveKernelSpec, constraints: KernelConstraints
 ) -> ty.Union[Sum, Product]:
-    constraints = constraints or default_constraints()
 
     inner = build_kernel(kernel_spec.operands[0], constraints)
     if len(kernel_spec.operands) == 1:
@@ -45,9 +43,7 @@ def build_kernel_additive(
     return inner
 
 
-def build_kernel(
-    kernel_spec: KernelSpec, constraints: KernelConstraints = None, top_level=False
-) -> Kernel:
+def build_kernel(kernel_spec: KernelSpec, constraints: KernelConstraints) -> Kernel:
 
     constraints = constraints or default_constraints()
 
@@ -90,7 +86,7 @@ def build_kernel(
     elif isinstance(kernel_spec, ProductKernelSpec):
         inner = ConstantKernel(constant_value=kernel_spec.scalar)
         for operand in kernel_spec.operands:
-            inner *= build_kernel(operand, constraints, top_level=False)
+            inner *= build_kernel(operand, constraints)
 
     else:
         print("invalid kernel_spec type -- type(kernel_spec):", type(kernel_spec))
@@ -98,7 +94,7 @@ def build_kernel(
         raise TypeError("Invalid kernel spec type")
 
     if isinstance(kernel_spec, TopLevelKernelSpec):
-        inner = build_kernel_additive(kernel_spec)
-        inner = inner + WhiteKernel(noise_level=0.001)
+        inner = build_kernel_additive(kernel_spec, constraints)
+        inner = inner + WhiteKernel(noise_level=TopLevelKernelSpec.noise)
 
     return inner

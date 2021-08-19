@@ -55,11 +55,11 @@ class BaseKernelSpec(KernelSpec):
     kernel_name: InitVar[str]
     pp_replacements: InitVar[dict[str, str]]
 
-    def spec_str(self, verbose: bool, pretty: bool) -> str:
+    def spec_str(self, verbose: bool = True, pretty: bool = True) -> str:
         name = str(self.kernel_name)
         if verbose:
             param_str = ",".join([f"{k}={v:.4f}" for k, v in self.asdict().items()])
-            for str1, str2 in self.pp_replacements.items():
+            for str1, str2 in ty.cast(dict[str, str], self.pp_replacements).items():
                 param_str = param_str.replace(str1, str2)
             return f"{name}({param_str})"
         else:
@@ -115,12 +115,7 @@ class LinearKernelSpec(BaseKernelSpec):
     pp_replacements: InitVar[dict[str, str]] = {"variance": "var"}
 
 
-@dataclass(frozen=True)
-class WhiteKernelSpec(BaseKernelSpec):
-    variance: float = 1
-
-    kernel_name: InitVar[str] = "WN"
-    pp_replacements: InitVar[dict[str, str]] = {"variance": "σ"}
+##############
 
 
 @dataclass(frozen=True)
@@ -144,7 +139,7 @@ class AdditiveKernelSpec(KernelSpec):
 @dataclass(frozen=True)
 class TopLevelKernelSpec(AdditiveKernelSpec):
     operands: list["ProductKernelSpec"] = field(default_factory=list)
-    noise: float = 0.001
+    noise: float = 0.01
 
     def spec_str(self, verbose=True, pretty=True) -> str:
         operandStrings = sorted(op.spec_str(verbose, pretty) for op in self.operands)

@@ -16,6 +16,7 @@ from ...kernel_specs import (
     RQKernelSpec as RQ,
     LinearKernelSpec as LIN,
     PeriodicKernelSpec as PER,
+    PeriodicNoConstKernelSpec as PERnc,
     AdditiveKernelSpec as ADD,
     ProductKernelSpec as PROD,
 )
@@ -35,12 +36,24 @@ from ..custom_periodic_kernel import PeriodicKernelNoConstant
 
 class TestBuildKernel:
     def test_starting_kernel_specs(self):
-        [build_kernel(k) for k in starting_kernel_specs(default_base_kernel_classes)]
+        [
+            build_kernel(k, default_constraints())
+            for k in starting_kernel_specs(default_base_kernel_classes)
+        ]
 
 
 class TestBuildKernelWithConstraints:
     def test_build_periodic_default_constraints(self):
-        k = ty.cast(PeriodicKernelNoConstant, build_kernel(PER()))
+        k = ty.cast(
+            PeriodicKernelNoConstant, build_kernel(PER(), default_constraints())
+        )
+        assert tuple(k.hyperparameter_length_scale.bounds.flatten()) == cb_default()
+        assert tuple(k.hyperparameter_periodicity.bounds.flatten()) == cb_default()
+
+    def test_build_periodic_default_constraints_PERnc(self):
+        k = ty.cast(
+            PeriodicKernelNoConstant, build_kernel(PERnc(), default_constraints())
+        )
         assert tuple(k.hyperparameter_length_scale.bounds.flatten()) == cb_default()
         assert tuple(k.hyperparameter_periodicity.bounds.flatten()) == cb_default()
 

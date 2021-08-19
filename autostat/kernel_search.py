@@ -71,12 +71,13 @@ def score_kernel_spec(
     kernel_spec: TopLevelKernelSpec,
     data: Dataset,
     model_class: type[AutoGpModel],
+    run_settings: RunSettings,
     logger: Logger = None,
 ) -> ScoredKernelInfo:
     logger = logger or BasicLogger()
     tic = time.perf_counter()
 
-    model = model_class(kernel_spec, data)
+    model = model_class(kernel_spec, data, run_settings=run_settings)
 
     model.fit(data)
 
@@ -113,6 +114,7 @@ def score_kernel_specs(
     data: Dataset,
     model_class: type[AutoGpModel],
     kernel_scores: KernelScores,
+    run_settings: RunSettings,
     logger: Logger = None,
 ) -> KernelScores:
     logger = logger or BasicLogger()
@@ -121,7 +123,9 @@ def score_kernel_specs(
         spec_str = spec.spec_str(False, False)
         if spec_str in kernel_scores:
             continue
-        kernel_scores[spec_str] = score_kernel_spec(spec, data, model_class, logger)
+        kernel_scores[spec_str] = score_kernel_spec(
+            spec, data, model_class, run_settings, logger
+        )
     return kernel_scores
 
 
@@ -168,8 +172,8 @@ def get_best_kernel_info(
 def kernel_search(
     data: Dataset,
     model_class: type[AutoGpModel],
+    run_settings: RunSettings,
     kernel_scores: KernelScores = None,
-    run_settings: RunSettings = RunSettings(),
     logger: Logger = None,
 ) -> KernelScores:
 
@@ -180,6 +184,8 @@ def kernel_search(
     for i in range(run_settings.max_search_depth):
         tic = time.perf_counter()
         logger.print(f"# DEPTH {i}")
+
+        # set up kernels for this depth
         if i == 0:
             specs = run_settings.initial_kernels
         else:
@@ -198,8 +204,9 @@ def kernel_search(
         logger.print(f"### specs to check at depth {i}")
         logger.print("\n".join(["* " + str(sp) for sp in specs]))
 
+        # score kernels at this depth
         kernel_scores = score_kernel_specs(
-            specs, data, model_class, kernel_scores, logger
+            specs, data, model_class, kernel_scores, run_settings, logger
         )
 
         best_kernel_info = get_best_kernel_info(kernel_scores)
@@ -225,14 +232,11 @@ def kernel_search(
 def find_best_kernel_and_predict(
     data: Dataset,
     model_class: type[AutoGpModel],
+    run_settings: RunSettings,
     kernel_scores: KernelScores = None,
-    run_settings: RunSettings = RunSettings(),
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     kernel_scores = kernel_search(
-        data,
-        model_class,
-        kernel_scores,
-        run_settings,
+        data, model_class, run_settings=run_settings, kernel_scores=kernel_scores
     )
     best_kernel_info = get_best_kernel_info(kernel_scores)
 
