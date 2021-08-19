@@ -26,7 +26,7 @@ class ScoredKernelInfo(NamedTuple):
     name: str
     spec_pre_fit: TopLevelKernelSpec
     spec_fitted: TopLevelKernelSpec
-    model: Union["AutoGpModel", None]
+    model: AutoGpModel
     bic: float
     log_likelihood: float
 
@@ -190,7 +190,7 @@ def kernel_search(
             specs = run_settings.initial_kernels
         else:
             best_kernel_info = get_best_kernel_info(kernel_scores)
-            residuals = cast(AutoGpModel, best_kernel_info.model).residuals()
+            residuals = best_kernel_info.model.residuals()
             base_kernel_prototypes = intialize_base_kernel_prototypes_from_residuals(
                 residuals, run_settings.base_kernel_prototypes
             )
@@ -211,7 +211,7 @@ def kernel_search(
 
         best_kernel_info = get_best_kernel_info(kernel_scores)
 
-        best_model = cast(AutoGpModel, best_kernel_info.model)
+        best_model = best_kernel_info.model
         best_fitted_spec = best_kernel_info.spec_fitted
 
         best_kernel_str = f"""Best at depth {i}:   {best_fitted_spec.spec_str(False,True)}  -- bic: {best_kernel_info.bic:.2f}, log likelihood: {best_kernel_info.log_likelihood:.3f}, M: {best_fitted_spec.num_params()}
