@@ -23,16 +23,13 @@ from ..kernel_specs import (
     ProductOperandSpec,
     RBFKernelSpec,
     RQKernelSpec,
+    TopLevelKernelSpec,
 )
 from .custom_periodic_kernel import PeriodicKernelNoConstant
 
 
 def remove_nones(L: list) -> list:
     return [x for x in L if x is not None]
-
-
-def remove_white_kernels(L: list[Kernel]) -> list[Kernel]:
-    return [k for k in L if not isinstance(k, WhiteKernel)]
 
 
 def to_kernel_spec_additive(kernel: Sum) -> AdditiveKernelSpec:
@@ -132,8 +129,16 @@ def to_kernel_spec_inner(kernel: Kernel) -> KernelSpec:
 def to_kernel_spec(kernel: ty.Union[Sum, Product]) -> AdditiveKernelSpec:
     # NOTE: from sklearn, top level product specs (scalar times 1 or more base kernels)
     # will NOT be wrapped in an additive kernel
+
     inner_spec = to_kernel_spec_inner(kernel)
     if isinstance(inner_spec, AdditiveKernelSpec):
+        # NOTE: sklearn Sum kernels including a WhiteKernel must map to a TopLevelKernelSpec
+        if isinstance(kernel.k1, WhiteKernel) or isinstance(kernel.k2, WhiteKernel):
+            wk = kernel.k1 if isinstance(kernel.k1, WhiteKernel) else kernel.k2
+            return TopLevelKernelSpec(
+                operands=inner_spec.operands, noise=wk.get_params()["noise_level"]
+            )
+
         return inner_spec
     elif isinstance(inner_spec, ProductKernelSpec):
         return AdditiveKernelSpec(operands=[inner_spec])

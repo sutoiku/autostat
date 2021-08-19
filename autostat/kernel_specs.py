@@ -116,6 +116,14 @@ class LinearKernelSpec(BaseKernelSpec):
 
 
 @dataclass(frozen=True)
+class WhiteKernelSpec(BaseKernelSpec):
+    variance: float = 1
+
+    kernel_name: InitVar[str] = "WN"
+    pp_replacements: InitVar[dict[str, str]] = {"variance": "σ"}
+
+
+@dataclass(frozen=True)
 class AdditiveKernelSpec(KernelSpec):
     operands: list["ProductKernelSpec"] = field(default_factory=list)
 
@@ -131,6 +139,21 @@ class AdditiveKernelSpec(KernelSpec):
             return "(" + " + ".join(operandStrings) + ")"
         else:
             return f"ADD({', '.join(operandStrings)})"
+
+
+@dataclass(frozen=True)
+class TopLevelKernelSpec(AdditiveKernelSpec):
+    operands: list["ProductKernelSpec"] = field(default_factory=list)
+    noise: float = 0.001
+
+    def spec_str(self, verbose=True, pretty=True) -> str:
+        operandStrings = sorted(op.spec_str(verbose, pretty) for op in self.operands)
+        if pretty:
+            v = f" + {self.noise:.4f}*ε" if verbose else ""
+            return " + ".join(operandStrings) + v
+        else:
+            v = f",σ={self.noise:.4f}" if verbose else ""
+            return f"TOP({', '.join(operandStrings)}{v})"
 
 
 ProductOperandSpec = ty.Union[

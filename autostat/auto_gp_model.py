@@ -3,7 +3,7 @@ from numpy.typing import ArrayLike, NDArray
 
 from typing import Protocol
 
-from .kernel_specs import KernelSpec, AdditiveKernelSpec
+from .kernel_specs import KernelSpec, TopLevelKernelSpec
 from .dataset_adapters import Dataset, ModelPredictions
 from .constraints import KernelConstraints
 
@@ -24,7 +24,7 @@ class AutoGpModel(Protocol):
     def residuals(self) -> np.ndarray:
         ...
 
-    def to_spec(self) -> AdditiveKernelSpec:
+    def to_spec(self) -> TopLevelKernelSpec:
         ...
 
     def print_fitted_kernel(self) -> None:

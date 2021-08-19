@@ -8,7 +8,11 @@ An implementation of the Automatic Statistician algorithm
 
   - error per component
   - spec_to_additive
+
     - once fitted, can construct new kernel matrices easily (independently of GP implementations if needed)
+
+  - QUESTIONS
+    - what happens with the error component in the sklearn kernel representation, and is that included in the overall model matrix i'm building
 
 - Kernels
 
@@ -46,3 +50,4 @@ An implementation of the Automatic Statistician algorithm
   - laplace approximation of model evidence
 - https://arxiv.org/pdf/1302.4922.pdf
   - posterior decomposition: see note in appendix
+    - sum of MV gaussians is MV gaussian: http://cs229.stanford.edu/section/more_on_gaussians.pdf

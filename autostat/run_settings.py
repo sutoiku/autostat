@@ -7,7 +7,7 @@ import inspect
 import autostat.kernel_specs as ks
 
 from .kernel_specs import (
-    AdditiveKernelSpec,
+    TopLevelKernelSpec,
     BaseKernelSpec,
     RBFKernelSpec,
     LinearKernelSpec,
@@ -15,7 +15,7 @@ from .kernel_specs import (
     PeriodicNoConstKernelSpec,
 )
 
-from .kernel_swaps import addititive_base_term_with_scalar
+from .kernel_swaps import top_level_spec_from_base_kernel
 
 
 default_base_kernel_classes: list[type[BaseKernelSpec]] = [
@@ -30,8 +30,8 @@ kernel_prototypes_from_classes = lambda classes: list(c() for c in classes)
 base_kernel_prototypes = kernel_prototypes_from_classes(default_base_kernel_classes)
 
 
-def starting_kernel_specs(kernel_classes) -> list[AdditiveKernelSpec]:
-    return [addititive_base_term_with_scalar(k()) for k in kernel_classes]
+def starting_kernel_specs(kernel_classes) -> list[TopLevelKernelSpec]:
+    return [top_level_spec_from_base_kernel(k()) for k in kernel_classes]
 
 
 default_initial_kernels = lambda: starting_kernel_specs(default_base_kernel_classes)
@@ -43,7 +43,7 @@ default_kernels_prototypes = lambda: base_kernel_prototypes
 class RunSettings:
     kernel_constraints: KernelConstraints = field(default_factory=default_constraints)
 
-    initial_kernels: list[AdditiveKernelSpec] = field(
+    initial_kernels: list[TopLevelKernelSpec] = field(
         default_factory=default_initial_kernels
     )
 

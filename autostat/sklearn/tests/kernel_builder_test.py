@@ -29,7 +29,6 @@ from ...constraints import (
     default_constraints,
 )
 
-# from ..to_kernel_spec import to_kernel_spec, to_kernel_spec_inner
 from ..kernel_builder import build_kernel
 from ..custom_periodic_kernel import PeriodicKernelNoConstant
 

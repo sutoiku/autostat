@@ -150,6 +150,6 @@ class TestSpecToSklearnAndBackRoundTrips_CompleteSpecs:
         # [build_kernel(k) for k in starting_kernel_specs()]
 
         for k in starting_kernel_specs(default_base_kernel_classes):
-            built_kernel = build_kernel_additive(k)
+            built_kernel = build_kernel(k)
             unbuilt_kernel = to_kernel_spec(built_kernel)
             assert str(k) == str(unbuilt_kernel)

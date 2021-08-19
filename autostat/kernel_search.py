@@ -8,7 +8,7 @@ from numpy.fft import fft, fftfreq
 from .auto_gp_model import AutoGpModel
 from .kernel_specs import (
     BaseKernelSpec,
-    AdditiveKernelSpec,
+    TopLevelKernelSpec,
     PeriodicKernelSpec,
     PeriodicNoConstKernelSpec,
 )
@@ -17,17 +17,15 @@ from .dataset_adapters import Dataset
 
 from .utils.logger import BasicLogger, Logger
 
-from .kernel_swaps import (
-    additive_subtree_swaps,
-)
+from .kernel_swaps import top_level_spec_swaps
 
 from .run_settings import RunSettings
 
 
 class ScoredKernelInfo(NamedTuple):
     name: str
-    spec_pre_fit: AdditiveKernelSpec
-    spec_fitted: AdditiveKernelSpec
+    spec_pre_fit: TopLevelKernelSpec
+    spec_fitted: TopLevelKernelSpec
     model: Union["AutoGpModel", None]
     bic: float
     log_likelihood: float
@@ -70,7 +68,7 @@ def plot_model(model: AutoGpModel, data: Dataset):
 
 
 def score_kernel_spec(
-    kernel_spec: AdditiveKernelSpec,
+    kernel_spec: TopLevelKernelSpec,
     data: Dataset,
     model_class: type[AutoGpModel],
     logger: Logger = None,
@@ -111,7 +109,7 @@ def score_kernel_spec(
 
 
 def score_kernel_specs(
-    specs: list[AdditiveKernelSpec],
+    specs: list[TopLevelKernelSpec],
     data: Dataset,
     model_class: type[AutoGpModel],
     kernel_scores: KernelScores,
@@ -192,7 +190,7 @@ def kernel_search(
             )
             proto_str = "\n".join(str(k) for k in base_kernel_prototypes)
             logger.print(f"### prototype kernels from residuals:\n {proto_str}")
-            specs = additive_subtree_swaps(
+            specs = top_level_spec_swaps(
                 best_kernel_info.spec_fitted,
                 base_kernel_prototypes,
             )

@@ -25,6 +25,8 @@ from ..kernel_specs import (
     ProductKernelSpec,
     RBFKernelSpec,
     RQKernelSpec,
+    TopLevelKernelSpec,
+    WhiteKernelSpec,
 )
 
 
@@ -95,6 +97,8 @@ def build_kernel(
         print(kernel_spec)
         raise TypeError("Invalid kernel spec type")
 
-    inner = inner + WhiteKernel(noise_level=0.001) if top_level else inner
+    if isinstance(kernel_spec, TopLevelKernelSpec):
+        inner = build_kernel_additive(kernel_spec)
+        inner = inner + WhiteKernel(noise_level=0.001)
 
     return inner

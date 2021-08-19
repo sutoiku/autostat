@@ -6,6 +6,7 @@ from .kernel_specs import (
     ProductKernelSpec,
     ProductOperandSpec,
     GenericKernelSpec,
+    TopLevelKernelSpec,
 )
 
 
@@ -102,8 +103,8 @@ def product_wrapped_base_kernel(
     return ProductKernelSpec(operands=[kernel.clone_update()], scalar=1)
 
 
-def addititive_base_term_with_scalar(kernel: BaseKernelSpec) -> AdditiveKernelSpec:
-    return AdditiveKernelSpec(operands=[product_wrapped_base_kernel(kernel)])
+def top_level_spec_from_base_kernel(kernel: BaseKernelSpec) -> TopLevelKernelSpec:
+    return TopLevelKernelSpec(operands=[product_wrapped_base_kernel(kernel)])
 
 
 def base_subtree_swaps(
@@ -225,3 +226,14 @@ def additive_subtree_swaps(
             )
 
     return dedupe_kernels([simplify_additive_kernel_spec(spec) for spec in nodes_out])
+
+
+def top_level_spec_swaps(
+    starting_spec: TopLevelKernelSpec,
+    base_kernel_prototypes: list[BaseKernelSpec],
+) -> list[TopLevelKernelSpec]:
+    new_specs = additive_subtree_swaps(starting_spec, base_kernel_prototypes)
+    return [
+        TopLevelKernelSpec(operands=spec.operands, noise=starting_spec.noise)
+        for spec in new_specs
+    ]
