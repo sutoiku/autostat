@@ -1,20 +1,14 @@
 from autostat.run_settings import init_run_settings_from_shorthand_args
 from autostat.utils.logger import Logger
+from autostat.utils.mauna_data_loader import load_mauna_numpy, scale_split
+from autostat.sklearn.model_wrapper import SklearnGPModel
+from autostat.kernel_search import kernel_search
+from autostat.constraints import constraints_from_data
+from autostat.dataset_adapters import NpDataSet
+
 from html_reports import Report
 import matplotlib.pyplot as plt
 import scipy.io as io
-
-
-from autostat.utils.mauna_data_loader import load_mauna_numpy, scale_split
-
-
-from autostat.kernel_search import kernel_search
-
-from autostat.dataset_adapters import (
-    NpDataSet,
-)
-
-from autostat.sklearn.model_wrapper import SklearnGPModel
 
 from datetime import datetime
 
@@ -59,11 +53,11 @@ def title_separator(title):
     logger.print(f"# ***{title}***")
 
 
-def run_report_fn(dataset_name: str, report_fn, run_settings):
+def run_report_fn(dataset_name: str, report_fn, run_settings_fn):
 
     title_separator(f"Dataset: {dataset_name}")
     tic = time.perf_counter()
-    report_fn(run_settings)
+    report_fn(run_settings_fn)
     toc = time.perf_counter()
     logger.print(f"Total time for {dataset_name}: {toc-tic:.3f} s")
 
@@ -72,12 +66,16 @@ def matlab_data_report_fn(file_path):
 
     data = io.loadmat(file_path)
 
-    def runner(run_settings):
+    def runner(run_settings_fn):
         train_x, test_x, train_y, test_y = scale_split(
             np.array(data["X"]), np.array(data["y"]), split=0.01
         )
 
         d = NpDataSet(train_x, train_y, test_x, test_y)
+
+        run_settings = run_settings_fn(d)
+        logger.print(str(run_settings))
+
         kernel_scores = kernel_search(
             d, SklearnGPModel, run_settings=run_settings, logger=logger
         )
@@ -88,11 +86,11 @@ def matlab_data_report_fn(file_path):
 matlab_data_path = "data/"
 
 files_sorted_by_num_data_points = [
-    # "01-airline.mat",
-    # "07-call-centre.mat",
+    "01-airline.mat",
+    "07-call-centre.mat",
     # "08-radio.mat",
-    # "04-wheat.mat",
-    # "02-solar.mat",
+    "04-wheat.mat",
+    "02-solar.mat",
     # "11-unemployment.mat",
     # "10-sulphuric.mat",
     # "09-gas-production.mat",
@@ -105,16 +103,14 @@ files_sorted_by_num_data_points = [
 
 if __name__ == "__main__":
     print("starting report")
-    # run_report_fn("Mauna Loa", run_mauna_loa)
-    # run_report_fn("Air passengers", run_air_passengers)
-    run_settings = init_run_settings_from_shorthand_args(
-        base_kernel_shortnames=["PERnc", "LIN", "RBF"], max_search_depth=2
+    run_settings_fn = lambda dataset: init_run_settings_from_shorthand_args(
+        base_kernel_shortnames=["PERnc", "LIN", "RBF"],
+        max_search_depth=3,
+        kernel_constraints=constraints_from_data(dataset),
     )
-    # print(str(run_settings))
-    logger.print(str(run_settings))
     for file in files_sorted_by_num_data_points:
         run_report_fn(
-            file, matlab_data_report_fn(matlab_data_path + file), run_settings
+            file, matlab_data_report_fn(matlab_data_path + file), run_settings_fn
         )
 
     report.write_report(filename=f"reports/report_{timestamp()}.html")

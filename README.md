@@ -2,21 +2,20 @@
 
 An implementation of the Automatic Statistician algorithm
 
+## Problems
+
+- why does adding restarts degrade performance so badly for PER? How is the model finding _better_ optima when it deviates from the residual-based starting point?
+
 ### to do / roadmap
 
 - DECOMPOSITION
 
   - error per component
-  - spec_to_additive
+  - expand to additive form
 
     - once fitted, can construct new kernel matrices easily (independently of GP implementations if needed)
 
-  - QUESTIONS
-    - what happens with the error component in the sklearn kernel representation, and is that included in the overall model matrix i'm building
-
 - Kernels
-
-  - expand to additive form
 
   - priors / constraints on kernels:
     - some limit on length scale for smoothing kernels? -- smoothing kernels should NOT pick up non-stationarity in a signal, that should be captured by a non stationary (polynomial trend etc kernel) kernel
