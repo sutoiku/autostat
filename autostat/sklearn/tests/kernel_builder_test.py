@@ -70,11 +70,11 @@ class TestBuildKernelWithConstraints:
             PeriodicKernelConstraints(length_scale=CB(10, 20), period=CB(0.5, 1.5))
         )
 
-        spec = ADD([PROD([PER()], scalar=6), PROD([LIN()], scalar=13)])
+        spec = ADD([PROD([LIN()]), PROD([PER()])])
 
         k = build_kernel(spec, constraints)
-        k.get_params()["k1__k2__periodicity_bounds"]
-        k.get_params()["k1__k2__length_scale_bounds"]
+        p_bounds = k.get_params()["k2__k2__periodicity_bounds"]
+        l_bounds = k.get_params()["k2__k2__length_scale_bounds"]
 
-        assert tuple(k.get_params()["k1__k2__length_scale_bounds"]) == (10, 20)
-        assert tuple(k.get_params()["k1__k2__periodicity_bounds"]) == (0.5, 1.5)
+        assert tuple(p_bounds) == (0.5, 1.5)
+        assert tuple(l_bounds) == (10, 20)

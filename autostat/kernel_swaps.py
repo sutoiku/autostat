@@ -7,7 +7,10 @@ from .kernel_specs import (
     ProductOperandSpec,
     GenericKernelSpec,
     TopLevelKernelSpec,
+    sort_specs_by_type,
 )
+
+# from .sort_kernel_specs import sort_specs_by_type
 
 
 def other_base_kernels(
@@ -19,12 +22,6 @@ def other_base_kernels(
         for k in base_kernel_prototypes
         if k.__class__.__name__ != kernel.__class__.__name__
     ]
-
-
-def sort_specs_by_type(
-    kernels: list[GenericKernelSpec],
-) -> list[GenericKernelSpec]:
-    return sorted(kernels, key=lambda node: node.spec_str(True, True))
 
 
 def sort_list_of_operand_lists(
