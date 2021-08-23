@@ -205,5 +205,32 @@ class TestMathOpAddAndMult:
 
         assert a * b * c * d * e == eval(expression)
 
+    def test_prod_plus_base(self):
+        a = RBF()
+        b = PER()
+        c = LIN()
+
+        B = ADD([PROD([RBF(), PER()]), PROD([LIN()])])
+        assert a * b + c == B
+        assert c + a * b == B
+
+    def test_prod_plus_prod(self):
+        a = RBF()
+        b = PER()
+        c = LIN()
+
+        A = a * b + a * c
+        B = ADD([PROD([RBF(), PER()]), PROD([RBF(), LIN()])])
+        assert A == B
+
     def test_add_times_add(self):
-        ...
+        a = RBF()
+        b = PER()
+        c = LIN()
+        d = RQ()
+
+        A = (a + b) * (c + d)
+        B = PROD(
+            [ADD([PROD([RBF()]), PROD([PER()])]), ADD([PROD([LIN()]), PROD([RQ()])])]
+        )
+        assert A == B

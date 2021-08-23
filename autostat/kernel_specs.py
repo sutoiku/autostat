@@ -97,6 +97,9 @@ class BaseKernelSpec(KernelSpec):
         elif isinstance(other, AdditiveKernelSpec):
             return AdditiveKernelSpec(operands=[1 * self, *other.operands])
 
+        elif isinstance(other, ProductKernelSpec):
+            return AdditiveKernelSpec(operands=[1 * self, other])
+
         else:
             raise TypeError(f"__add__ not defined for BaseKernelSpec and {type(other)}")
 
@@ -223,6 +226,11 @@ class TopLevelKernelSpec(AdditiveKernelSpec):
             v = f",σ={self.noise:.4f}" if verbose else ""
             return f"TOP({', '.join(operandStrings)}{v})"
 
+    @staticmethod
+    def from_additive(spec: AdditiveKernelSpec, noise: float = None):
+        ops = spec.operands
+        return TopLevelKernelSpec(ops, noise) if noise else TopLevelKernelSpec(ops)
+
 
 ProductOperandSpec = ty.Union[
     BaseKernelSpec,
@@ -280,5 +288,12 @@ class ProductKernelSpec(KernelSpec):
                     "scalar": self.scalar * other.scalar,
                 }
             )
+        else:
+            return NotImplemented
+
+    def __add__(self, other: "KernelSpec") -> AdditiveKernelSpec:
+        if isinstance(other, ProductKernelSpec):
+            return AdditiveKernelSpec([self, other])
+
         else:
             return NotImplemented
