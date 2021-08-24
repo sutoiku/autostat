@@ -39,6 +39,9 @@ default_initial_kernels = lambda: starting_kernel_specs(default_base_kernel_clas
 default_kernels_prototypes = lambda: base_kernel_prototypes
 
 
+####
+
+
 @dataclass(frozen=True)
 class RunSettings:
     kernel_constraints: KernelConstraints = field(default_factory=default_constraints)
@@ -53,8 +56,13 @@ class RunSettings:
 
     max_search_depth: int = 5
 
+    expand_kernel_specs_as_sums: bool = False
+
     kernel_priors: None = None
     log_level: None = None
+
+
+#######
 
 
 def get_kernel_class_short_name_mapping() -> dict[str, BaseKernelSpec]:
@@ -65,6 +73,23 @@ def get_kernel_class_short_name_mapping() -> dict[str, BaseKernelSpec]:
                 if item[0] == "kernel_name":
                     shortname_to_kernel_class[item[1]] = obj
     return shortname_to_kernel_class
+
+
+def kernel_protos_from_names(base_kernel_shortnames: list[str]):
+    kernel_class_short_name_mapping = get_kernel_class_short_name_mapping()
+
+    base_kernel_classes: list[BaseKernelSpec] = []
+    for bksn in base_kernel_shortnames:
+        # print(bksn, kernel_class_short_name_mapping[bksn])
+        try:
+            base_kernel_classes.append(kernel_class_short_name_mapping[bksn])
+        except:
+            valid_names = ", ".join(kernel_class_short_name_mapping.keys())
+            raise ValueError(
+                f'Invalid base kernel name "{bksn}"; must be one of {valid_names}'
+            )
+
+    return kernel_prototypes_from_classes(base_kernel_classes)
 
 
 def init_run_settings_from_shorthand_args(

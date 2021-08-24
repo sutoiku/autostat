@@ -126,7 +126,7 @@ def to_kernel_spec_inner(kernel: Kernel) -> KernelSpec:
     return inner
 
 
-def to_kernel_spec(kernel: ty.Union[Sum, Product]) -> AdditiveKernelSpec:
+def to_kernel_spec(kernel: ty.Union[Sum, Product]) -> TopLevelKernelSpec:
     # NOTE: from sklearn, top level product specs (scalar times 1 or more base kernels)
     # will NOT be wrapped in an additive kernel
 
@@ -139,9 +139,9 @@ def to_kernel_spec(kernel: ty.Union[Sum, Product]) -> AdditiveKernelSpec:
                 operands=inner_spec.operands, noise=wk.get_params()["noise_level"]
             )
 
-        return inner_spec
+        return TopLevelKernelSpec(operands=inner_spec.operands)
     elif isinstance(inner_spec, ProductKernelSpec):
-        return AdditiveKernelSpec(operands=[inner_spec])
+        return TopLevelKernelSpec(operands=[inner_spec])
     else:
         print(
             "invalid inner kernel type for to_kernel_spec_top_level:", type(inner_spec)

@@ -5,7 +5,6 @@ from typing import Protocol
 
 from .kernel_specs import KernelSpec, TopLevelKernelSpec
 from .dataset_adapters import Dataset, ModelPredictions
-from .constraints import KernelConstraints
 from .run_settings import RunSettings
 
 

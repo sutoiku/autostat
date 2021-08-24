@@ -95,6 +95,6 @@ def build_kernel(kernel_spec: KernelSpec, constraints: KernelConstraints) -> Ker
 
     if isinstance(kernel_spec, TopLevelKernelSpec):
         inner = build_kernel_additive(kernel_spec, constraints)
-        inner = inner + WhiteKernel(noise_level=TopLevelKernelSpec.noise)
+        inner = inner + WhiteKernel(noise_level=kernel_spec.noise)
 
     return inner

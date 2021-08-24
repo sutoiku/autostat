@@ -19,6 +19,7 @@ from ...kernel_specs import (
     PeriodicNoConstKernelSpec as PERnc,
     AdditiveKernelSpec as ADD,
     ProductKernelSpec as PROD,
+    TopLevelKernelSpec as TOP,
 )
 
 import typing as ty
@@ -34,25 +35,25 @@ from ..custom_periodic_kernel import PeriodicKernelNoConstant
 class TestToKernelSpec:
     def test_one_term_product_kernel(self):
         k_sklearn = 22 * PeriodicKernelNoConstant()
-        k_autostat = ADD([PROD([PERnc()], 22)])
+        k_autostat = TOP([PROD([PERnc()], 22)])
 
         assert str(k_autostat) == str(to_kernel_spec(k_sklearn))
 
     def test_one_term_product_kernel_2(self):
         k_sklearn = 22 * ExpSineSquared()
-        k_autostat = ADD([PROD([PER()], 22)])
+        k_autostat = TOP([PROD([PER()], 22)])
 
         assert str(k_autostat) == str(to_kernel_spec(k_sklearn))
 
     def test_simple_composite_kernel(self):
         k_sklearn = (22 * RationalQuadratic()) + (44 * PeriodicKernelNoConstant())
-        k_autostat = ADD([PROD([RQ()], 22), PROD([PERnc()], 44)])
+        k_autostat = TOP([PROD([RQ()], 22), PROD([PERnc()], 44)])
         assert str(k_autostat) == str(to_kernel_spec(k_sklearn))
 
     def test_more_complex_composite_kernel(self):
         k_sklearn = 64 * PeriodicKernelNoConstant() * (25 * RBF() + 81 * DotProduct())
 
-        k_autostat = ADD(
+        k_autostat = TOP(
             [
                 PROD([PERnc(), ADD([PROD([RBF_spec()], 25), PROD([LIN()], 81)])], 64),
             ]
@@ -64,7 +65,7 @@ class TestToKernelSpec:
         k_sklearn = (16 * RationalQuadratic() * DotProduct()) + (
             64 * PeriodicKernelNoConstant() * (25 * RBF() + 81 * DotProduct())
         )
-        k_autostat = ADD(
+        k_autostat = TOP(
             [
                 PROD([RQ(), LIN()], 16),
                 PROD([PERnc(), ADD([PROD([RBF_spec()], 25), PROD([LIN()], 81)])], 64),
@@ -81,7 +82,7 @@ class TestToKernelSpec:
             * PeriodicKernelNoConstant(length_scale=9, periodicity=3)
             * (25 * RBF(length_scale=13) + 81 * DotProduct(sigma_0=77))
         )
-        k_autostat = ADD(
+        k_autostat = TOP(
             [
                 PROD([RQ(alpha=3, length_scale=5), LIN(variance=7)], 16),
                 PROD(
@@ -121,17 +122,11 @@ class TestSklearnToSpecAndBackRoundTrips_InnerSpecs:
             )
 
     def test_simple_sum_kernel(self):
-        k = (1 * RBF()) + (4 * PeriodicKernelNoConstant())
+        k = (1 * RBF()) + (4 * PeriodicKernelNoConstant()) + WhiteKernel(0.454)
+        spec = to_kernel_spec(k)
+        # assert spec == k
 
-        assert k == build_kernel(to_kernel_spec(k), default_constraints())
-
-    # def test_simple_product(self):
-    #     k = 4 * RBF() * PeriodicKernelNoConstant()
-    #     assert k == build_kernel(to_kernel_spec(k))
-
-    # def test_simple_composite_kernel(self):
-    #     k = 9 * RBF() * PeriodicKernelNoConstant() + 16 * DotProduct()
-    #     assert k == build_kernel(to_kernel_spec(k))
+        assert k == build_kernel(spec, default_constraints())
 
 
 class TestSpecToSklearnAndBackRoundTrips_InnerSpecs:

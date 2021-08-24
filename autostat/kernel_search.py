@@ -199,6 +199,7 @@ def kernel_search(
             specs = top_level_spec_swaps(
                 best_kernel_info.spec_fitted,
                 base_kernel_prototypes,
+                run_settings.expand_kernel_specs_as_sums,
             )
 
         logger.print(f"### specs to check at depth {i}")

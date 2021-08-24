@@ -12,7 +12,7 @@ from sklearn.gaussian_process.kernels import (
 from .to_kernel_spec import to_kernel_spec
 
 from ..kernel_specs import (
-    AdditiveKernelSpec,
+    TopLevelKernelSpec,
     KernelSpec,
 )
 from ..run_settings import RunSettings
@@ -77,5 +77,5 @@ class SklearnGPModel:
     def print_fitted_kernel(self):
         print(self.gp.kernel_)
 
-    def to_spec(self) -> AdditiveKernelSpec:
+    def to_spec(self) -> TopLevelKernelSpec:
         return to_kernel_spec(ty.cast(Sum, self.gp.kernel_))

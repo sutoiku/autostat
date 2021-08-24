@@ -10,7 +10,7 @@ from .kernel_specs import (
     sort_specs_by_type,
 )
 
-# from .sort_kernel_specs import sort_specs_by_type
+from .expand_spec import expand_spec
 
 
 def other_base_kernels(
@@ -228,9 +228,14 @@ def additive_subtree_swaps(
 def top_level_spec_swaps(
     starting_spec: TopLevelKernelSpec,
     base_kernel_prototypes: list[BaseKernelSpec],
+    expand_specs_as_sums: bool = False,
 ) -> list[TopLevelKernelSpec]:
+
+    expander = expand_spec if expand_specs_as_sums else (lambda spec: spec)
+
     new_specs = additive_subtree_swaps(starting_spec, base_kernel_prototypes)
+
     return [
-        TopLevelKernelSpec(operands=spec.operands, noise=starting_spec.noise)
+        expander(TopLevelKernelSpec(operands=spec.operands, noise=starting_spec.noise))
         for spec in new_specs
     ]
