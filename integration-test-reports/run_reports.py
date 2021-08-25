@@ -4,7 +4,7 @@ from autostat.utils.mauna_data_loader import load_mauna_numpy, scale_split
 from autostat.sklearn.model_wrapper import SklearnGPModel
 from autostat.kernel_search import kernel_search
 from autostat.constraints import constraints_from_data
-from autostat.dataset_adapters import NpDataSet
+from autostat.dataset_adapters import Dataset
 
 from html_reports import Report
 import matplotlib.pyplot as plt
@@ -71,7 +71,7 @@ def matlab_data_report_fn(file_path):
             np.array(data["X"]), np.array(data["y"]), split=0.01
         )
 
-        d = NpDataSet(train_x, train_y, test_x, test_y)
+        d = Dataset(train_x, train_y, test_x, test_y)
 
         run_settings = run_settings_fn(d)
         logger.print(str(run_settings))

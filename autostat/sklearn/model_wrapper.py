@@ -1,4 +1,3 @@
-# from autostat.constraints import constraints_from_data
 import typing as ty
 
 import numpy as np
@@ -16,7 +15,7 @@ from ..kernel_specs import (
     KernelSpec,
 )
 from ..run_settings import RunSettings
-from ..dataset_adapters import Dataset, NpDataSet, ModelPredictions
+from ..dataset_adapters import Dataset, ModelPredictions
 from .kernel_builder import build_kernel
 from ..math import calc_bic
 
@@ -30,7 +29,7 @@ class SklearnGPModel:
         alpha=1e-7,
     ) -> None:
         self.kernel_spec = kernel_spec
-        self.data = ty.cast(NpDataSet, data)
+        self.data = data
         self.run_settings = run_settings
 
         kernel = build_kernel(

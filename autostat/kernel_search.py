@@ -1,3 +1,4 @@
+from autostat.decomposition import decompose_spec
 import time
 from typing import NamedTuple, Union, cast
 
@@ -21,6 +22,8 @@ from .kernel_swaps import top_level_spec_swaps
 
 from .run_settings import RunSettings
 
+from .plots import plot_decomposition, plot_model
+
 
 class ScoredKernelInfo(NamedTuple):
     name: str
@@ -32,39 +35,6 @@ class ScoredKernelInfo(NamedTuple):
 
 
 KernelScores = dict[str, "ScoredKernelInfo"]
-
-
-def plot_observations(X, Y, ax):
-    ax.plot(X.flatten(), Y.flatten(), "k.", markersize=1)
-
-
-def plot_predictions(pred_x, pred_mean_y, lower_y, upper_y, ax):
-    # Plot predictive means as blue line
-    ax.plot(pred_x.flatten(), pred_mean_y.flatten(), "r")
-    # Shade between the lower and upper confidence bounds
-    ax.fill_between(
-        pred_x.flatten(),
-        lower_y.flatten(),
-        upper_y.flatten(),
-        alpha=0.5,
-    )
-
-
-def plot_model(model: AutoGpModel, data: Dataset):
-    train_x, train_y, test_x, test_y = data
-
-    _, ax = plt.subplots(1, 1, figsize=(14, 3))
-    plot_observations(train_x, train_y, ax)
-    plot_observations(test_x, test_y, ax)
-
-    y, l, u = model.predict(data.train_x)
-
-    plot_predictions(data.train_x, y, l, u, ax)
-
-    y, l, u = model.predict(data.test_x)
-    plot_predictions(data.test_x, y, l, u, ax)
-
-    return ax
 
 
 def score_kernel_spec(
@@ -85,7 +55,7 @@ def score_kernel_spec(
     num_params = kernel_spec.num_params()
     bic = model.bic()
 
-    ax = plot_model(model, data)
+    fig, ax = plot_model(model, data)
 
     fitted_spec = model.to_spec()
 
@@ -97,7 +67,7 @@ def score_kernel_spec(
 
     toc = time.perf_counter()
     logger.print(f"**{fitted_spec.spec_str(False,True)}** -- fit in: {toc-tic:.3f} s")
-    logger.show(plt.gcf())
+    logger.show(fig)
 
     return ScoredKernelInfo(
         kernel_spec.spec_str(False, False),
@@ -205,7 +175,7 @@ def kernel_search(
         logger.print(f"### specs to check at depth {i}")
         logger.print("\n".join(["* " + str(sp) for sp in specs]))
 
-        # score kernels at this depth
+        # score the kernels for this depth
         kernel_scores = score_kernel_specs(
             specs, data, model_class, kernel_scores, run_settings, logger
         )
@@ -221,9 +191,14 @@ def kernel_search(
 
         logger.print("## " + best_kernel_str)
 
-        ax = plot_model(best_model, data)
+        fig, ax = plot_model(best_model, data)
         ax.set_title(best_kernel_str)
-        logger.show(plt.gcf())
+        logger.show(fig)
+
+        decomp = decompose_spec(best_fitted_spec, data.train_x, data.train_y)
+        fig = plot_decomposition(decomp)
+        logger.show(fig)
+
         toc = time.perf_counter()
         logger.print(f"depth {i} complete in: {toc-tic:.3f} s")
 
