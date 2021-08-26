@@ -52,8 +52,16 @@ def plot_decomposition(d: DecompositionData):
 
     axes = ty.cast(list[plt.Axes], axes)
 
-    for (spec, y_comp), ax in zip(d.components, axes):
+    for (spec, y_comp, y_std), ax in zip(d.components, axes):
         ax.plot(d.x, y_comp)
+        # print("y_comp", y_comp.shape, y_comp)
+        # print("y_std", y_std.shape, y_std)
+        ax.fill_between(
+            d.x.flatten(),
+            y_comp.flatten() - 2 * y_std.flatten(),
+            y_comp.flatten() + 2 * y_std.flatten(),
+            alpha=0.5,
+        )
         ax.set_title(spec.spec_str(True, True))
 
     return fig

@@ -52,3 +52,5 @@ An implementation of the Automatic Statistician algorithm
 
 - block matrix inversion:
   - http://www.math.chalmers.se/~rootzen/highdimensional/blockmatrixinverse.pdf
+
+### implementation notes and tricks:
