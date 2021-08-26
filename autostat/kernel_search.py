@@ -24,6 +24,8 @@ from .run_settings import RunSettings
 
 from .plots import plot_decomposition, plot_model
 
+from .expand_spec import expand_spec
+
 
 class ScoredKernelInfo(NamedTuple):
     name: str
@@ -195,7 +197,11 @@ def kernel_search(
         ax.set_title(best_kernel_str)
         logger.show(fig)
 
-        decomp = decompose_spec(best_fitted_spec, data.train_x, data.train_y)
+        expanded_spec = expand_spec(best_fitted_spec)
+
+        logger.print(f"best spec expanded:\n{expanded_spec.spec_str(True,True)}")
+
+        decomp = decompose_spec(expanded_spec, data.train_x, data.train_y)
         fig = plot_decomposition(decomp)
         logger.show(fig)
 

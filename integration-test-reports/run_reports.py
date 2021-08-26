@@ -1,9 +1,11 @@
-from autostat.run_settings import init_run_settings_from_shorthand_args
-from autostat.utils.logger import Logger
+from autostat.run_settings import RunSettings
+
+# from autostat.utils.logger import Logger
 from autostat.utils.mauna_data_loader import load_mauna_numpy, scale_split
 from autostat.sklearn.model_wrapper import SklearnGPModel
 from autostat.kernel_search import kernel_search
-from autostat.constraints import constraints_from_data
+
+# from autostat.constraints import constraints_from_data
 from autostat.dataset_adapters import Dataset
 
 from html_reports import Report
@@ -103,11 +105,15 @@ files_sorted_by_num_data_points = [
 
 if __name__ == "__main__":
     print("starting report")
-    run_settings_fn = lambda dataset: init_run_settings_from_shorthand_args(
-        base_kernel_shortnames=["PERnc", "LIN", "RBF"],
-        max_search_depth=3,
-        kernel_constraints=constraints_from_data(dataset),
+
+    run_settings_fn = (
+        lambda dataset: RunSettings(
+            max_search_depth=4, expand_kernel_specs_as_sums=False
+        )
+        .replace_base_kernels_by_names(["PERnc", "LIN", "RBF"])
+        .replace_constraints_using_dataset(dataset)
     )
+
     for file in files_sorted_by_num_data_points:
         run_report_fn(
             file, matlab_data_report_fn(matlab_data_path + file), run_settings_fn
