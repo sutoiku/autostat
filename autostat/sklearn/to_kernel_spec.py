@@ -28,10 +28,6 @@ from ..kernel_specs import (
 from .custom_periodic_kernel import PeriodicKernelNoConstant
 
 
-def remove_nones(L: list) -> list:
-    return [x for x in L if x is not None]
-
-
 def to_kernel_spec_additive(kernel: Sum) -> AdditiveKernelSpec:
     params = kernel.get_params()
     operands: list[ProductKernelSpec] = []
