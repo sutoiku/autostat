@@ -16,6 +16,7 @@ from ...kernel_specs import (
     RQKernelSpec as RQ,
     LinearKernelSpec as LIN,
     PeriodicKernelSpec as PER,
+    PeriodicNoConstKernelSpec as PERnc,
     AdditiveKernelSpec as ADD,
     ProductKernelSpec as PROD,
 )
@@ -29,19 +30,30 @@ from ...constraints import (
     default_constraints,
 )
 
-# from ..to_kernel_spec import to_kernel_spec, to_kernel_spec_inner
 from ..kernel_builder import build_kernel
 from ..custom_periodic_kernel import PeriodicKernelNoConstant
 
 
 class TestBuildKernel:
     def test_starting_kernel_specs(self):
-        [build_kernel(k) for k in starting_kernel_specs(default_base_kernel_classes)]
+        [
+            build_kernel(k, default_constraints())
+            for k in starting_kernel_specs(default_base_kernel_classes)
+        ]
 
 
 class TestBuildKernelWithConstraints:
     def test_build_periodic_default_constraints(self):
-        k = ty.cast(PeriodicKernelNoConstant, build_kernel(PER()))
+        k = ty.cast(
+            PeriodicKernelNoConstant, build_kernel(PER(), default_constraints())
+        )
+        assert tuple(k.hyperparameter_length_scale.bounds.flatten()) == cb_default()
+        assert tuple(k.hyperparameter_periodicity.bounds.flatten()) == cb_default()
+
+    def test_build_periodic_default_constraints_PERnc(self):
+        k = ty.cast(
+            PeriodicKernelNoConstant, build_kernel(PERnc(), default_constraints())
+        )
         assert tuple(k.hyperparameter_length_scale.bounds.flatten()) == cb_default()
         assert tuple(k.hyperparameter_periodicity.bounds.flatten()) == cb_default()
 
@@ -58,11 +70,11 @@ class TestBuildKernelWithConstraints:
             PeriodicKernelConstraints(length_scale=CB(10, 20), period=CB(0.5, 1.5))
         )
 
-        spec = ADD([PROD([PER()], scalar=6), PROD([LIN()], scalar=13)])
+        spec = ADD([PROD([LIN()]), PROD([PER()])])
 
         k = build_kernel(spec, constraints)
-        k.get_params()["k1__k2__periodicity_bounds"]
-        k.get_params()["k1__k2__length_scale_bounds"]
+        p_bounds = k.get_params()["k2__k2__periodicity_bounds"]
+        l_bounds = k.get_params()["k2__k2__length_scale_bounds"]
 
-        assert tuple(k.get_params()["k1__k2__length_scale_bounds"]) == (10, 20)
-        assert tuple(k.get_params()["k1__k2__periodicity_bounds"]) == (0.5, 1.5)
+        assert tuple(p_bounds) == (0.5, 1.5)
+        assert tuple(l_bounds) == (10, 20)

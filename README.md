@@ -2,17 +2,18 @@
 
 An implementation of the Automatic Statistician algorithm
 
+## Problems
+
+- why does adding restarts degrade performance so badly for PER? How is the model finding _better_ optima when it deviates from the residual-based starting point?
+- product specs containing a sum operand have an extra scalar: $ s1 _ A _ (s2 _ B + s3 _ C)$ -- s1 is redundant, should just be 1
+
 ### to do / roadmap
 
 - DECOMPOSITION
 
   - error per component
-  - spec_to_additive
-    - once fitted, can construct new kernel matrices easily (independently of GP implementations if needed)
 
 - Kernels
-
-  - expand to additive form
 
   - priors / constraints on kernels:
     - some limit on length scale for smoothing kernels? -- smoothing kernels should NOT pick up non-stationarity in a signal, that should be captured by a non stationary (polynomial trend etc kernel) kernel
@@ -45,4 +46,11 @@ An implementation of the Automatic Statistician algorithm
   - GP search over structures
   - laplace approximation of model evidence
 - https://arxiv.org/pdf/1302.4922.pdf
+
   - posterior decomposition: see note in appendix
+    - sum of MV gaussians is MV gaussian: http://cs229.stanford.edu/section/more_on_gaussians.pdf
+
+- block matrix inversion:
+  - http://www.math.chalmers.se/~rootzen/highdimensional/blockmatrixinverse.pdf
+
+### implementation notes and tricks:

@@ -3,6 +3,7 @@ import typing as ty
 # from typing import ty.Any, Generic, NamedTuple, Union, TypeVar
 from dataclasses import asdict, dataclass, astuple, field, replace, InitVar
 
+# from .sort_kernel_specs import sort_specs_by_type
 
 # A kernel spec is composed of a top level AdditiveKernelSpec
 # Each summand of an additive kernel is a product
@@ -11,6 +12,12 @@ from dataclasses import asdict, dataclass, astuple, field, replace, InitVar
 
 
 GenericKernelSpec = ty.TypeVar("GenericKernelSpec", bound="KernelSpec")
+
+
+def sort_specs_by_type(
+    kernels: list[GenericKernelSpec],
+) -> list[GenericKernelSpec]:
+    return sorted(kernels, key=lambda node: node.spec_str(True, True))
 
 
 @dataclass(frozen=True)
@@ -50,16 +57,28 @@ class KernelSpec:
     def __repr__(self) -> str:
         return self.spec_str(True, False)
 
+    def __add__(self, other: "KernelSpec") -> "AdditiveKernelSpec":
+        ...
+
+    def __radd__(self, other: "KernelSpec") -> "AdditiveKernelSpec":
+        return self.__add__(other)
+
+    def __mul__(self, other: ty.Union["KernelSpec", float]) -> "ProductKernelSpec":
+        ...
+
+    def __rmul__(self, other: ty.Union["KernelSpec", float]) -> "ProductKernelSpec":
+        return self.__mul__(other)
+
 
 class BaseKernelSpec(KernelSpec):
     kernel_name: InitVar[str]
     pp_replacements: InitVar[dict[str, str]]
 
-    def spec_str(self, verbose: bool, pretty: bool) -> str:
+    def spec_str(self, verbose: bool = True, pretty: bool = True) -> str:
         name = str(self.kernel_name)
         if verbose:
             param_str = ",".join([f"{k}={v:.4f}" for k, v in self.asdict().items()])
-            for str1, str2 in self.pp_replacements.items():
+            for str1, str2 in ty.cast(dict[str, str], self.pp_replacements).items():
                 param_str = param_str.replace(str1, str2)
             return f"{name}({param_str})"
         else:
@@ -71,10 +90,36 @@ class BaseKernelSpec(KernelSpec):
     def fit_count(self) -> int:
         return sum(v != 1 for v in self.astuple())
 
+    def __add__(self, other: KernelSpec) -> "AdditiveKernelSpec":
+        if isinstance(other, BaseKernelSpec):
+            return AdditiveKernelSpec(operands=[1 * self, 1 * other])
+
+        elif isinstance(other, AdditiveKernelSpec):
+            return AdditiveKernelSpec(operands=[1 * self, *other.operands])
+
+        elif isinstance(other, ProductKernelSpec):
+            return AdditiveKernelSpec(operands=[1 * self, other])
+
+        else:
+            raise TypeError(f"__add__ not defined for BaseKernelSpec and {type(other)}")
+
+    def __mul__(self, other: ty.Union["KernelSpec", float]) -> "ProductKernelSpec":
+        if isinstance(other, float) or isinstance(other, int):
+            return ProductKernelSpec([self], scalar=float(other))
+
+        elif isinstance(other, BaseKernelSpec):
+            return ProductKernelSpec([self, other])
+
+        elif isinstance(other, AdditiveKernelSpec):
+            return ProductKernelSpec([self, other])
+
+        else:
+            return NotImplemented
+
 
 @dataclass(frozen=True)
 class RBFKernelSpec(BaseKernelSpec):
-    length_scale: float = 1
+    length_scale: float = 1.0
 
     kernel_name: InitVar[str] = "RBF"
     pp_replacements: InitVar[dict[str, str]] = {"length_scale": "l"}
@@ -82,8 +127,8 @@ class RBFKernelSpec(BaseKernelSpec):
 
 @dataclass(frozen=True)
 class PeriodicKernelSpec(BaseKernelSpec):
-    length_scale: float = 1
-    period: float = 1
+    length_scale: float = 1.0
+    period: float = 1.0
 
     kernel_name: InitVar[str] = "PER"
     pp_replacements: InitVar[dict[str, str]] = {"length_scale": "l", "period": "p"}
@@ -91,8 +136,8 @@ class PeriodicKernelSpec(BaseKernelSpec):
 
 @dataclass(frozen=True)
 class PeriodicNoConstKernelSpec(BaseKernelSpec):
-    length_scale: float = 1
-    period: float = 1
+    length_scale: float = 1.0
+    period: float = 1.0
 
     kernel_name: InitVar[str] = "PERnc"
     pp_replacements: InitVar[dict[str, str]] = {"length_scale": "l", "period": "p"}
@@ -100,8 +145,8 @@ class PeriodicNoConstKernelSpec(BaseKernelSpec):
 
 @dataclass(frozen=True)
 class RQKernelSpec(BaseKernelSpec):
-    length_scale: float = 1
-    alpha: float = 1
+    length_scale: float = 1.0
+    alpha: float = 1.0
 
     kernel_name: InitVar[str] = "RQ"
     pp_replacements: InitVar[dict[str, str]] = {"length_scale": "l", "alpha": "α"}
@@ -109,15 +154,22 @@ class RQKernelSpec(BaseKernelSpec):
 
 @dataclass(frozen=True)
 class LinearKernelSpec(BaseKernelSpec):
-    variance: float = 1
+    variance: float = 1.0
 
     kernel_name: InitVar[str] = "LIN"
     pp_replacements: InitVar[dict[str, str]] = {"variance": "var"}
 
 
+##############
+
+
+# # @sort_operands
 @dataclass(frozen=True)
 class AdditiveKernelSpec(KernelSpec):
     operands: list["ProductKernelSpec"] = field(default_factory=list)
+
+    def __post_init__(self):
+        object.__setattr__(self, "operands", sort_specs_by_type(self.operands))
 
     def num_params(self) -> int:
         return sum(op.num_params() for op in self.operands)
@@ -132,6 +184,53 @@ class AdditiveKernelSpec(KernelSpec):
         else:
             return f"ADD({', '.join(operandStrings)})"
 
+    def __add__(self, other: "KernelSpec") -> "AdditiveKernelSpec":
+        if isinstance(other, BaseKernelSpec):
+            ops = [*self.operands, 1 * other]
+
+        elif isinstance(other, AdditiveKernelSpec):
+            ops = [*self.operands, *other.operands]
+
+        elif isinstance(other, ProductKernelSpec):
+            ops = [*self.operands, other]
+
+        else:
+            return NotImplemented
+        return AdditiveKernelSpec(ops)
+
+    def __mul__(self, other: ty.Union["KernelSpec", float]) -> "ProductKernelSpec":
+        if isinstance(other, float) or isinstance(other, int):
+            return ProductKernelSpec([self], scalar=float(other))
+
+        elif isinstance(other, BaseKernelSpec) or isinstance(other, AdditiveKernelSpec):
+            return ProductKernelSpec([self, other], scalar=1.0)
+
+        elif isinstance(other, ProductKernelSpec):
+            return ProductKernelSpec(other.operands + [self], other.scalar)
+
+        else:
+            return NotImplemented
+
+
+@dataclass(frozen=True)
+class TopLevelKernelSpec(AdditiveKernelSpec):
+    operands: list["ProductKernelSpec"] = field(default_factory=list)
+    noise: float = 0.01
+
+    def spec_str(self, verbose=True, pretty=True) -> str:
+        operandStrings = sorted(op.spec_str(verbose, pretty) for op in self.operands)
+        if pretty:
+            v = f" + {self.noise:.4f}*ε" if verbose else ""
+            return " + ".join(operandStrings) + v
+        else:
+            v = f",σ={self.noise:.4f}" if verbose else ""
+            return f"TOP({', '.join(operandStrings)}{v})"
+
+    @staticmethod
+    def from_additive(spec: AdditiveKernelSpec, noise: float = None):
+        ops = spec.operands
+        return TopLevelKernelSpec(ops, noise) if noise else TopLevelKernelSpec(ops)
+
 
 ProductOperandSpec = ty.Union[
     BaseKernelSpec,
@@ -142,9 +241,12 @@ ProductOperandSpec = ty.Union[
 @dataclass(frozen=True)
 class ProductKernelSpec(KernelSpec):
     operands: list[ProductOperandSpec] = field(default_factory=list)
-    scalar: float = 1
+    scalar: float = 1.0
 
     kernel_name: InitVar[str] = "PROD"
+
+    def __post_init__(self, _):
+        object.__setattr__(self, "operands", sort_specs_by_type(self.operands))
 
     def num_params(self) -> int:
         # 1 for scalar, plus child params
@@ -168,3 +270,30 @@ class ProductKernelSpec(KernelSpec):
         return replace(
             self, **{"operands": cloned_operands, "scalar": self.scalar, **kwargs}
         )
+
+    def __mul__(self, other: ty.Union["KernelSpec", float]) -> "ProductKernelSpec":
+        if isinstance(other, float) or isinstance(other, int):
+            return self.clone_update({"scalar": other * self.scalar})
+
+        elif isinstance(other, BaseKernelSpec):
+            return self.clone_update({"operands": self.operands + [other]})
+
+        elif isinstance(other, AdditiveKernelSpec):
+            return self.clone_update({"operands": self.operands + [other]})
+
+        elif isinstance(other, ProductKernelSpec):
+            return self.clone_update(
+                {
+                    "operands": self.operands + other.operands,
+                    "scalar": self.scalar * other.scalar,
+                }
+            )
+        else:
+            return NotImplemented
+
+    def __add__(self, other: "KernelSpec") -> AdditiveKernelSpec:
+        if isinstance(other, ProductKernelSpec):
+            return AdditiveKernelSpec([self, other])
+
+        else:
+            return NotImplemented

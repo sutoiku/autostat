@@ -6,7 +6,11 @@ from .kernel_specs import (
     ProductKernelSpec,
     ProductOperandSpec,
     GenericKernelSpec,
+    TopLevelKernelSpec,
+    sort_specs_by_type,
 )
+
+from .expand_spec import expand_spec
 
 
 def other_base_kernels(
@@ -18,12 +22,6 @@ def other_base_kernels(
         for k in base_kernel_prototypes
         if k.__class__.__name__ != kernel.__class__.__name__
     ]
-
-
-def sort_specs_by_type(
-    kernels: list[GenericKernelSpec],
-) -> list[GenericKernelSpec]:
-    return sorted(kernels, key=lambda node: node.spec_str(True, True))
 
 
 def sort_list_of_operand_lists(
@@ -102,8 +100,8 @@ def product_wrapped_base_kernel(
     return ProductKernelSpec(operands=[kernel.clone_update()], scalar=1)
 
 
-def addititive_base_term_with_scalar(kernel: BaseKernelSpec) -> AdditiveKernelSpec:
-    return AdditiveKernelSpec(operands=[product_wrapped_base_kernel(kernel)])
+def top_level_spec_from_base_kernel(kernel: BaseKernelSpec) -> TopLevelKernelSpec:
+    return TopLevelKernelSpec(operands=[product_wrapped_base_kernel(kernel)])
 
 
 def base_subtree_swaps(
@@ -225,3 +223,19 @@ def additive_subtree_swaps(
             )
 
     return dedupe_kernels([simplify_additive_kernel_spec(spec) for spec in nodes_out])
+
+
+def top_level_spec_swaps(
+    starting_spec: TopLevelKernelSpec,
+    base_kernel_prototypes: list[BaseKernelSpec],
+    expand_specs_as_sums: bool = False,
+) -> list[TopLevelKernelSpec]:
+
+    expander = expand_spec if expand_specs_as_sums else (lambda spec: spec)
+
+    new_specs = additive_subtree_swaps(starting_spec, base_kernel_prototypes)
+
+    return [
+        expander(TopLevelKernelSpec(operands=spec.operands, noise=starting_spec.noise))
+        for spec in new_specs
+    ]

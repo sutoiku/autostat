@@ -3,16 +3,20 @@ from numpy.typing import ArrayLike, NDArray
 
 from typing import Protocol
 
-from .kernel_specs import KernelSpec, AdditiveKernelSpec
+from .kernel_specs import KernelSpec, TopLevelKernelSpec
 from .dataset_adapters import Dataset, ModelPredictions
-from .constraints import KernelConstraints
+from .run_settings import RunSettings
 
 
 class AutoGpModel(Protocol):
     data: Dataset
-    constraints: KernelConstraints
 
-    def __init__(self, kernel_spec: KernelSpec, data: Dataset) -> None:
+    def __init__(
+        self,
+        kernel_spec: KernelSpec,
+        data: Dataset,
+        run_settings: RunSettings,
+    ) -> None:
         ...
 
     def fit(self, data: Dataset) -> None:
@@ -24,7 +28,7 @@ class AutoGpModel(Protocol):
     def residuals(self) -> np.ndarray:
         ...
 
-    def to_spec(self) -> AdditiveKernelSpec:
+    def to_spec(self) -> TopLevelKernelSpec:
         ...
 
     def print_fitted_kernel(self) -> None:
@@ -35,7 +39,3 @@ class AutoGpModel(Protocol):
 
     def log_likelihood(self) -> float:
         ...
-
-    # @staticmethod
-    # def get_kernel_constraints_from_data(data) -> KernelConstraints:
-    #     ...

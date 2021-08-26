@@ -1,13 +1,14 @@
-from dataclasses import dataclass, field
+from .dataset_adapters import Dataset
+from dataclasses import dataclass, field, replace
 import typing as ty
 
-from .constraints import KernelConstraints, default_constraints
+from .constraints import KernelConstraints, default_constraints, constraints_from_data
 
 import inspect
 import autostat.kernel_specs as ks
 
 from .kernel_specs import (
-    AdditiveKernelSpec,
+    TopLevelKernelSpec,
     BaseKernelSpec,
     RBFKernelSpec,
     LinearKernelSpec,
@@ -15,7 +16,7 @@ from .kernel_specs import (
     PeriodicNoConstKernelSpec,
 )
 
-from .kernel_swaps import addititive_base_term_with_scalar
+from .kernel_swaps import top_level_spec_from_base_kernel
 
 
 default_base_kernel_classes: list[type[BaseKernelSpec]] = [
@@ -30,31 +31,13 @@ kernel_prototypes_from_classes = lambda classes: list(c() for c in classes)
 base_kernel_prototypes = kernel_prototypes_from_classes(default_base_kernel_classes)
 
 
-def starting_kernel_specs(kernel_classes) -> list[AdditiveKernelSpec]:
-    return [addititive_base_term_with_scalar(k()) for k in kernel_classes]
+def starting_kernel_specs(kernel_classes) -> list[TopLevelKernelSpec]:
+    return [top_level_spec_from_base_kernel(k()) for k in kernel_classes]
 
 
 default_initial_kernels = lambda: starting_kernel_specs(default_base_kernel_classes)
 
 default_kernels_prototypes = lambda: base_kernel_prototypes
-
-
-@dataclass(frozen=True)
-class RunSettings:
-    kernel_constraints: KernelConstraints = field(default_factory=default_constraints)
-
-    initial_kernels: list[AdditiveKernelSpec] = field(
-        default_factory=default_initial_kernels
-    )
-
-    base_kernel_prototypes: list[BaseKernelSpec] = field(
-        default_factory=default_kernels_prototypes
-    )
-
-    max_search_depth: int = 5
-
-    kernel_priors: None = None
-    log_level: None = None
 
 
 def get_kernel_class_short_name_mapping() -> dict[str, BaseKernelSpec]:
@@ -67,10 +50,7 @@ def get_kernel_class_short_name_mapping() -> dict[str, BaseKernelSpec]:
     return shortname_to_kernel_class
 
 
-def init_run_settings_from_shorthand_args(
-    base_kernel_shortnames: list[str], max_search_depth: int = 5
-) -> RunSettings:
-
+def kernel_protos_from_names(base_kernel_shortnames: list[str]):
     kernel_class_short_name_mapping = get_kernel_class_short_name_mapping()
 
     base_kernel_classes: list[BaseKernelSpec] = []
@@ -84,8 +64,30 @@ def init_run_settings_from_shorthand_args(
                 f'Invalid base kernel name "{bksn}"; must be one of {valid_names}'
             )
 
-    return RunSettings(
-        initial_kernels=starting_kernel_specs(base_kernel_classes),
-        base_kernel_prototypes=kernel_prototypes_from_classes(base_kernel_classes),
-        max_search_depth=max_search_depth,
+    return kernel_prototypes_from_classes(base_kernel_classes)
+
+
+####
+
+
+@dataclass(frozen=True)
+class RunSettings:
+    kernel_constraints: KernelConstraints = field(default_factory=default_constraints)
+    initial_kernels: list[TopLevelKernelSpec] = field(
+        default_factory=default_initial_kernels
     )
+    base_kernel_prototypes: list[BaseKernelSpec] = field(
+        default_factory=default_kernels_prototypes
+    )
+    kernel_priors: None = None
+
+    expand_kernel_specs_as_sums: bool = False
+
+    log_level: None = None
+    max_search_depth: int = 5
+
+    def replace_base_kernels_by_names(self, names: list[str]) -> "RunSettings":
+        return replace(self, base_kernel_prototypes=kernel_protos_from_names(names))
+
+    def replace_constraints_using_dataset(self, dataset: Dataset) -> "RunSettings":
+        return replace(self, kernel_constraints=constraints_from_data(dataset))
