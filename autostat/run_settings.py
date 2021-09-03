@@ -2,7 +2,8 @@ from .dataset_adapters import Dataset
 from dataclasses import dataclass, field, replace
 import typing as ty
 
-from .constraints import KernelConstraints, default_constraints, constraints_from_data
+from .constraints import update_kernel_protos_constrained_with_data
+
 
 import inspect
 import autostat.kernel_specs as ks
@@ -55,7 +56,7 @@ def kernel_protos_from_names(base_kernel_shortnames: list[str]):
 
     base_kernel_classes: list[BaseKernelSpec] = []
     for bksn in base_kernel_shortnames:
-        # print(bksn, kernel_class_short_name_mapping[bksn])
+
         try:
             base_kernel_classes.append(kernel_class_short_name_mapping[bksn])
         except:
@@ -72,7 +73,6 @@ def kernel_protos_from_names(base_kernel_shortnames: list[str]):
 
 @dataclass(frozen=True)
 class RunSettings:
-    kernel_constraints: KernelConstraints = field(default_factory=default_constraints)
     initial_kernels: list[TopLevelKernelSpec] = field(
         default_factory=default_initial_kernels
     )
@@ -89,5 +89,14 @@ class RunSettings:
     def replace_base_kernels_by_names(self, names: list[str]) -> "RunSettings":
         return replace(self, base_kernel_prototypes=kernel_protos_from_names(names))
 
-    def replace_constraints_using_dataset(self, dataset: Dataset) -> "RunSettings":
-        return replace(self, kernel_constraints=constraints_from_data(dataset))
+    def replace_init_kernel_proto_constraints_using_dataset(
+        self, dataset: Dataset
+    ) -> "RunSettings":
+        initial_kernels = update_kernel_protos_constrained_with_data(
+            self.base_kernel_prototypes, dataset
+        )
+        initial_kernels = [
+            TopLevelKernelSpec.from_base_kernel(k) for k in initial_kernels
+        ]
+
+        return replace(self, initial_kernels=initial_kernels)

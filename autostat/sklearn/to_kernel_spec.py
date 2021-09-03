@@ -1,4 +1,3 @@
-from autostat.constraints import constraints_from_data
 import typing as ty
 
 from sklearn.gaussian_process.kernels import (
@@ -24,6 +23,7 @@ from ..kernel_specs import (
     RBFKernelSpec,
     RQKernelSpec,
     TopLevelKernelSpec,
+    ConstraintBounds as CB,
 )
 from .custom_periodic_kernel import PeriodicKernelNoConstant
 
@@ -87,26 +87,31 @@ def to_kernel_spec_product(kernel: Product) -> ProductKernelSpec:
 
 
 def to_kernel_spec_inner(kernel: Kernel) -> KernelSpec:
-    params = kernel.get_params()
     if isinstance(kernel, RBF):
-        inner: KernelSpec = RBFKernelSpec(length_scale=params["length_scale"])
+        inner: KernelSpec = RBFKernelSpec(length_scale=kernel.length_scale)
 
     elif isinstance(kernel, DotProduct):
         # inner = (sigma_0=kernel.variance)
-        inner = LinearKernelSpec(variance=params["sigma_0"])
+        inner = LinearKernelSpec(variance=kernel.sigma_0)
 
     elif isinstance(kernel, ExpSineSquared):
         inner = PeriodicKernelSpec(
-            length_scale=params["length_scale"], period=params["periodicity"]
+            length_scale=kernel.length_scale,
+            period=kernel.periodicity,
+            length_scale_bounds=CB(*kernel.length_scale_bounds),
+            period_bounds=CB(*kernel.periodicity_bounds),
         )
 
     elif isinstance(kernel, PeriodicKernelNoConstant):
         inner = PeriodicNoConstKernelSpec(
-            length_scale=params["length_scale"], period=params["periodicity"]
+            length_scale=kernel.length_scale,
+            period=kernel.periodicity,
+            length_scale_bounds=CB(*kernel.length_scale_bounds),
+            period_bounds=CB(*kernel.periodicity_bounds),
         )
 
     elif isinstance(kernel, RationalQuadratic):
-        inner = RQKernelSpec(length_scale=params["length_scale"], alpha=params["alpha"])
+        inner = RQKernelSpec(length_scale=kernel.length_scale, alpha=kernel.alpha)
 
     elif isinstance(kernel, Sum):
         inner = to_kernel_spec_additive(kernel)

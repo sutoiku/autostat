@@ -1,11 +1,9 @@
 from autostat.run_settings import RunSettings
 
-# from autostat.utils.logger import Logger
 from autostat.utils.mauna_data_loader import load_mauna_numpy, scale_split
 from autostat.sklearn.model_wrapper import SklearnGPModel
 from autostat.kernel_search import kernel_search
 
-# from autostat.constraints import constraints_from_data
 from autostat.dataset_adapters import Dataset
 
 from html_reports import Report
@@ -111,7 +109,7 @@ if __name__ == "__main__":
             max_search_depth=4, expand_kernel_specs_as_sums=False
         )
         .replace_base_kernels_by_names(["PERnc", "LIN", "RBF"])
-        .replace_constraints_using_dataset(dataset)
+        .replace_init_kernel_proto_constraints_using_dataset(dataset)
     )
 
     for file in files_sorted_by_num_data_points:

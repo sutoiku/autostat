@@ -2,7 +2,6 @@ from dataclasses import dataclass
 import typing as ty
 
 import numpy as np
-from numpy.lib.twodim_base import diag
 from numpy.typing import NDArray
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import Kernel
@@ -10,13 +9,12 @@ from sklearn.gaussian_process.kernels import Kernel
 from .kernel_specs import ProductKernelSpec, TopLevelKernelSpec, KernelSpec
 
 from .sklearn.kernel_builder import build_kernel
-from .constraints import default_constraints
 
 
 def gram_matrix_from_spec(
     spec: KernelSpec, x: NDArray[np.float_]
 ) -> NDArray[np.float_]:
-    gp = GaussianProcessRegressor(kernel=build_kernel(spec, default_constraints()))
+    gp = GaussianProcessRegressor(kernel=build_kernel(spec))
     kernel = ty.cast(Kernel, gp.kernel)
     K = kernel(x)
     return ty.cast(NDArray[np.float_], K)
@@ -38,7 +36,6 @@ def decompose_spec(
     components = []
 
     for sub_spec in spec.operands:
-        # spec_str = sub_spec.spec_str(True, False)
         K_i = gram_matrix_from_spec(sub_spec, x)
         components.append(
             (

@@ -9,6 +9,10 @@ An implementation of the Automatic Statistician algorithm
 
 ### to do / roadmap
 
+- gpytorch:
+
+  - add PERnc kernel
+
 - DECOMPOSITION
 
   - error per component
@@ -28,7 +32,6 @@ An implementation of the Automatic Statistician algorithm
 - cross validation / overfitting
 
 - parallelism
-- reimplement gpytorch
 - remove dependencies on gpytorch and sklearn (move to separate modules)
 
 - server

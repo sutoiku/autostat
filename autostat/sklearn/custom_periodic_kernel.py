@@ -46,8 +46,8 @@ class PeriodicKernelNoConstant(StationaryKernelMixin, NormalizedKernelMixin, Ker
     ):
         self.length_scale: float = length_scale
         self.periodicity: float = periodicity
-        self.length_scale_bounds: float = length_scale_bounds
-        self.periodicity_bounds: float = periodicity_bounds
+        self.length_scale_bounds: tuple[float, float] = length_scale_bounds
+        self.periodicity_bounds: tuple[float, float] = periodicity_bounds
 
     @property
     def hyperparameter_length_scale(self):

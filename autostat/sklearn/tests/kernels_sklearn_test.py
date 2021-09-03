@@ -25,7 +25,6 @@ from ...kernel_specs import (
 import typing as ty
 
 from ...run_settings import starting_kernel_specs, default_base_kernel_classes
-from ...constraints import default_constraints
 
 from ..to_kernel_spec import to_kernel_spec, to_kernel_spec_inner
 from ..kernel_builder import build_kernel
@@ -106,9 +105,7 @@ class TestToKernelSpec:
 class TestSklearnToSpecAndBackRoundTrips_InnerSpecs:
     def test_base_kernels(self):
         for k in [RBF, RationalQuadratic, PeriodicKernelNoConstant, DotProduct]:
-            assert str(k()) == str(
-                build_kernel(to_kernel_spec_inner(k()), default_constraints())
-            )
+            assert str(k()) == str(build_kernel(to_kernel_spec_inner(k())))
 
     def test_parameterized_base_kernels(self):
         for k in [
@@ -117,24 +114,20 @@ class TestSklearnToSpecAndBackRoundTrips_InnerSpecs:
             DotProduct(sigma_0=1.7),
             PeriodicKernelNoConstant(length_scale=8.9, periodicity=0.13),
         ]:
-            assert str(k) == str(
-                build_kernel(to_kernel_spec_inner(k), default_constraints())
-            )
+            assert str(k) == str(build_kernel(to_kernel_spec_inner(k)))
 
     def test_simple_sum_kernel(self):
         k = (1 * RBF()) + (4 * PeriodicKernelNoConstant()) + WhiteKernel(0.454)
         spec = to_kernel_spec(k)
         # assert spec == k
 
-        assert k == build_kernel(spec, default_constraints())
+        assert k == build_kernel(spec)
 
 
 class TestSpecToSklearnAndBackRoundTrips_InnerSpecs:
     def test_base_kernels(self):
         for k in default_base_kernel_classes:
-            assert str(k()) == str(
-                to_kernel_spec_inner(build_kernel(k(), default_constraints()))
-            )
+            assert str(k()) == str(to_kernel_spec_inner(build_kernel(k())))
 
     def test_parameterized_base_kernels(self):
         for k in [
@@ -143,9 +136,7 @@ class TestSpecToSklearnAndBackRoundTrips_InnerSpecs:
             LIN(variance=1.7),
             PER(length_scale=8.9, period=0.13),
         ]:
-            assert str(k) == str(
-                to_kernel_spec_inner(build_kernel(k, default_constraints()))
-            )
+            assert str(k) == str(to_kernel_spec_inner(build_kernel(k)))
 
 
 class TestSpecToSklearnAndBackRoundTrips_CompleteSpecs:
@@ -153,6 +144,6 @@ class TestSpecToSklearnAndBackRoundTrips_CompleteSpecs:
         # [build_kernel(k) for k in starting_kernel_specs()]
 
         for k in starting_kernel_specs(default_base_kernel_classes):
-            built_kernel = ty.cast(Sum, build_kernel(k, default_constraints()))
+            built_kernel = ty.cast(Sum, build_kernel(k))
             unbuilt_kernel = to_kernel_spec(built_kernel)
             assert str(k) == str(unbuilt_kernel)

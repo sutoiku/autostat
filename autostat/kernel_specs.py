@@ -1,9 +1,8 @@
 import typing as ty
 
-# from typing import ty.Any, Generic, NamedTuple, Union, TypeVar
+
 from dataclasses import asdict, dataclass, astuple, field, replace, InitVar
 
-# from .sort_kernel_specs import sort_specs_by_type
 
 # A kernel spec is composed of a top level AdditiveKernelSpec
 # Each summand of an additive kernel is a product
@@ -12,6 +11,24 @@ from dataclasses import asdict, dataclass, astuple, field, replace, InitVar
 
 
 GenericKernelSpec = ty.TypeVar("GenericKernelSpec", bound="KernelSpec")
+
+
+class ConstraintBounds(ty.NamedTuple):
+    lower: float = 0.00001
+    upper: float = 1000
+
+    def interval_proportion(self, a: float) -> float:
+        if a < 0.0 or a > 1.0:
+            raise ValueError(f"interval_proportion argument must be in [0,1], got {a}")
+        return self.lower + a * (self.upper - self.lower)
+
+    def clamp(self, x: float) -> float:
+        if x < self.lower:
+            return self.interval_proportion(0.01)
+        elif x > self.upper:
+            return self.interval_proportion(0.99)
+        else:
+            return x
 
 
 def sort_specs_by_type(
@@ -40,16 +57,28 @@ class KernelSpec:
     def clone_update(
         self: GenericKernelSpec, kwargs: dict[str, ty.Any] = {}
     ) -> GenericKernelSpec:
+        for k, v in kwargs.items():
+            bounds_key = k + "_bounds"
+            if hasattr(self, bounds_key):
+                bounds = ty.cast(ConstraintBounds, getattr(self, bounds_key))
+                if v < bounds.lower or v > bounds.upper:
+                    raise ValueError(
+                        f"Attempted to clone_update '{k}' with value {v} outside of allowed bounds {bounds}"
+                    )
         return replace(self, **kwargs)
 
     def __iter__(self):
-        yield from astuple(self)
+        yield from self.params()
 
-    def asdict(self) -> dict[str, ty.Any]:
-        return asdict(self)
+    def param_dict(self) -> dict[str, ty.Any]:
+        return {
+            k: v for k, v in asdict(self).items() if not isinstance(v, ConstraintBounds)
+        }
 
-    def astuple(self) -> tuple[ty.Any, ...]:
-        return astuple(self)
+    def params(self) -> tuple[ty.Any, ...]:
+        return tuple(
+            item for item in astuple(self) if not isinstance(item, ConstraintBounds)
+        )
 
     def __str__(self) -> str:
         return self.spec_str(True, True)
@@ -77,7 +106,7 @@ class BaseKernelSpec(KernelSpec):
     def spec_str(self, verbose: bool = True, pretty: bool = True) -> str:
         name = str(self.kernel_name)
         if verbose:
-            param_str = ",".join([f"{k}={v:.4f}" for k, v in self.asdict().items()])
+            param_str = ",".join([f"{k}={v:.4f}" for k, v in self.param_dict().items()])
             for str1, str2 in ty.cast(dict[str, str], self.pp_replacements).items():
                 param_str = param_str.replace(str1, str2)
             return f"{name}({param_str})"
@@ -85,10 +114,10 @@ class BaseKernelSpec(KernelSpec):
             return name
 
     def num_params(self) -> int:
-        return len(self.astuple())
+        return len(self.params())
 
     def fit_count(self) -> int:
-        return sum(v != 1 for v in self.astuple())
+        return sum(v != 1 for v in self.params())
 
     def __add__(self, other: KernelSpec) -> "AdditiveKernelSpec":
         if isinstance(other, BaseKernelSpec):
@@ -121,6 +150,8 @@ class BaseKernelSpec(KernelSpec):
 class RBFKernelSpec(BaseKernelSpec):
     length_scale: float = 1.0
 
+    length_scale_bounds: ConstraintBounds = ConstraintBounds()
+
     kernel_name: InitVar[str] = "RBF"
     pp_replacements: InitVar[dict[str, str]] = {"length_scale": "l"}
 
@@ -129,6 +160,9 @@ class RBFKernelSpec(BaseKernelSpec):
 class PeriodicKernelSpec(BaseKernelSpec):
     length_scale: float = 1.0
     period: float = 1.0
+
+    length_scale_bounds: ConstraintBounds = ConstraintBounds()
+    period_bounds: ConstraintBounds = ConstraintBounds()
 
     kernel_name: InitVar[str] = "PER"
     pp_replacements: InitVar[dict[str, str]] = {"length_scale": "l", "period": "p"}
@@ -139,6 +173,9 @@ class PeriodicNoConstKernelSpec(BaseKernelSpec):
     length_scale: float = 1.0
     period: float = 1.0
 
+    length_scale_bounds: ConstraintBounds = ConstraintBounds()
+    period_bounds: ConstraintBounds = ConstraintBounds()
+
     kernel_name: InitVar[str] = "PERnc"
     pp_replacements: InitVar[dict[str, str]] = {"length_scale": "l", "period": "p"}
 
@@ -148,6 +185,9 @@ class RQKernelSpec(BaseKernelSpec):
     length_scale: float = 1.0
     alpha: float = 1.0
 
+    length_scale_bounds: ConstraintBounds = ConstraintBounds()
+    alpha_bounds: ConstraintBounds = ConstraintBounds()
+
     kernel_name: InitVar[str] = "RQ"
     pp_replacements: InitVar[dict[str, str]] = {"length_scale": "l", "alpha": "α"}
 
@@ -155,6 +195,8 @@ class RQKernelSpec(BaseKernelSpec):
 @dataclass(frozen=True)
 class LinearKernelSpec(BaseKernelSpec):
     variance: float = 1.0
+
+    variance_bounds: ConstraintBounds = ConstraintBounds()
 
     kernel_name: InitVar[str] = "LIN"
     pp_replacements: InitVar[dict[str, str]] = {"variance": "var"}
@@ -230,6 +272,17 @@ class TopLevelKernelSpec(AdditiveKernelSpec):
     def from_additive(spec: AdditiveKernelSpec, noise: float = None):
         ops = spec.operands
         return TopLevelKernelSpec(ops, noise) if noise else TopLevelKernelSpec(ops)
+
+    @staticmethod
+    def from_base_kernel(
+        spec: BaseKernelSpec, scalar: float = None, noise: float = None
+    ):
+        prod = (
+            ProductKernelSpec([spec], scalar) if scalar else ProductKernelSpec([spec])
+        )
+        return (
+            TopLevelKernelSpec([prod], noise) if noise else TopLevelKernelSpec([prod])
+        )
 
 
 ProductOperandSpec = ty.Union[

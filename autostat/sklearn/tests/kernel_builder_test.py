@@ -7,6 +7,7 @@ from sklearn.gaussian_process.kernels import (
     DotProduct,
     Product,
     Sum,
+    ExpSineSquared,
 )
 
 import typing as ty
@@ -19,16 +20,10 @@ from ...kernel_specs import (
     PeriodicNoConstKernelSpec as PERnc,
     AdditiveKernelSpec as ADD,
     ProductKernelSpec as PROD,
+    ConstraintBounds as CB,
 )
 
 from ...run_settings import starting_kernel_specs, default_base_kernel_classes
-from ...constraints import (
-    KernelConstraints,
-    ConstraintBounds as CB,
-    PeriodicKernelConstraints,
-    cb_default,
-    default_constraints,
-)
 
 from ..kernel_builder import build_kernel
 from ..custom_periodic_kernel import PeriodicKernelNoConstant
@@ -36,43 +31,47 @@ from ..custom_periodic_kernel import PeriodicKernelNoConstant
 
 class TestBuildKernel:
     def test_starting_kernel_specs(self):
-        [
-            build_kernel(k, default_constraints())
-            for k in starting_kernel_specs(default_base_kernel_classes)
-        ]
+        [build_kernel(k) for k in starting_kernel_specs(default_base_kernel_classes)]
 
 
 class TestBuildKernelWithConstraints:
-    def test_build_periodic_default_constraints(self):
-        k = ty.cast(
-            PeriodicKernelNoConstant, build_kernel(PER(), default_constraints())
-        )
-        assert tuple(k.hyperparameter_length_scale.bounds.flatten()) == cb_default()
-        assert tuple(k.hyperparameter_periodicity.bounds.flatten()) == cb_default()
+    def test_build_PER_default_constraints(self):
+        k = ty.cast(ExpSineSquared, build_kernel(PER()))
+        assert tuple(k.hyperparameter_length_scale.bounds.flatten()) == CB()
+        assert tuple(k.hyperparameter_periodicity.bounds.flatten()) == CB()
 
-    def test_build_periodic_default_constraints_PERnc(self):
-        k = ty.cast(
-            PeriodicKernelNoConstant, build_kernel(PERnc(), default_constraints())
-        )
-        assert tuple(k.hyperparameter_length_scale.bounds.flatten()) == cb_default()
-        assert tuple(k.hyperparameter_periodicity.bounds.flatten()) == cb_default()
+    def test_build_PERnc_default_constraints(self):
+        k = ty.cast(PeriodicKernelNoConstant, build_kernel(PERnc()))
+        assert tuple(k.hyperparameter_length_scale.bounds.flatten()) == CB()
+        assert tuple(k.hyperparameter_periodicity.bounds.flatten()) == CB()
 
-    def test_build_periodic_constrained(self):
-        constraints = KernelConstraints(
-            PeriodicKernelConstraints(length_scale=CB(10, 20), period=CB(0.5, 1.5))
+    def test_build_PER_constrained(self):
+        spec = PER().clone_update(
+            {"length_scale_bounds": CB(10, 20), "period_bounds": CB(0.5, 1.5)}
         )
-        k = ty.cast(PeriodicKernelNoConstant, build_kernel(PER(), constraints))
+
+        k = ty.cast(ExpSineSquared, build_kernel(spec))
+        assert tuple(k.hyperparameter_length_scale.bounds.flatten()) == (10, 20)
+        assert tuple(k.hyperparameter_periodicity.bounds.flatten()) == (0.5, 1.5)
+
+    def test_build_PERnc_constrained(self):
+        spec = PERnc().clone_update(
+            {"length_scale_bounds": CB(10, 20), "period_bounds": CB(0.5, 1.5)}
+        )
+
+        k = ty.cast(PeriodicKernelNoConstant, build_kernel(spec))
         assert tuple(k.hyperparameter_length_scale.bounds.flatten()) == (10, 20)
         assert tuple(k.hyperparameter_periodicity.bounds.flatten()) == (0.5, 1.5)
 
     def test_build_periodic_constrained_composite(self):
-        constraints = KernelConstraints(
-            PeriodicKernelConstraints(length_scale=CB(10, 20), period=CB(0.5, 1.5))
+
+        per_spec = PER().clone_update(
+            {"length_scale_bounds": CB(10, 20), "period_bounds": CB(0.5, 1.5)}
         )
 
-        spec = ADD([PROD([LIN()]), PROD([PER()])])
+        spec = ADD([PROD([LIN()]), PROD([per_spec])])
 
-        k = build_kernel(spec, constraints)
+        k = build_kernel(spec)
         p_bounds = k.get_params()["k2__k2__periodicity_bounds"]
         l_bounds = k.get_params()["k2__k2__length_scale_bounds"]
 
