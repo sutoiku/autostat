@@ -1,5 +1,6 @@
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
+import typing as ty
 
 
 from gpytorch.kernels import Kernel, AdditiveKernel
@@ -74,9 +75,14 @@ class GpytorchGPModel:
             x = self._np_to_dev(self.data.train_x)
             Y = self.data.train_y
 
-            L = self.model.covar_module(x).detach().cholesky().clone().cpu().numpy()
+            covar_module = ty.cast(torch.Tensor, self.model.covar_module(x))
+            L = covar_module.detach().cholesky().clone().cpu().numpy()
+
+            # L = self.model.covar_module(x).detach().cholesky().clone().cpu().numpy()
             N = Y.shape[0]
-            sigma2 = self.model.likelihood.noise.item()
+            sigma2 = ty.cast(
+                gp.likelihoods.GaussianLikelihood, self.model.likelihood
+            ).noise.item()
 
             K = L @ L.T + sigma2 * np.eye(N)
             K_inv = np.linalg.inv(K)
@@ -98,7 +104,11 @@ class GpytorchGPModel:
 
         # Make predictions by feeding model through likelihood
         with torch.no_grad(), gp.settings.fast_pred_var():
-            observed_pred = self.likelihood(self.model(x_torch))
+            observed_pred = ty.cast(
+                gp.distributions.MultivariateNormal,
+                self.likelihood(self.model(x_torch)),
+            )
+
             lower, upper = observed_pred.confidence_region()
 
             return ModelPredictions(
