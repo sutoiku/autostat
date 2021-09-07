@@ -1,6 +1,4 @@
-from ..constraints import KernelConstraints, default_constraints
 import typing as ty
-
 
 from sklearn.gaussian_process.kernels import (
     RBF,
@@ -29,23 +27,19 @@ from ..kernel_specs import (
 )
 
 
-def build_kernel_additive(
-    kernel_spec: AdditiveKernelSpec, constraints: KernelConstraints
-) -> ty.Union[Sum, Product]:
+def build_kernel_additive(kernel_spec: AdditiveKernelSpec) -> ty.Union[Sum, Product]:
 
-    inner = build_kernel(kernel_spec.operands[0], constraints)
+    inner = build_kernel(kernel_spec.operands[0])
     if len(kernel_spec.operands) == 1:
         return ty.cast(Product, inner)
 
     for product in kernel_spec.operands[1:-1]:
-        inner += build_kernel(product, constraints)
-    inner += build_kernel(kernel_spec.operands[-1], constraints)
+        inner += build_kernel(product)
+    inner += build_kernel(kernel_spec.operands[-1])
     return inner
 
 
-def build_kernel(kernel_spec: KernelSpec, constraints: KernelConstraints) -> Kernel:
-
-    constraints = constraints or default_constraints()
+def build_kernel(kernel_spec: KernelSpec) -> Kernel:
 
     if isinstance(kernel_spec, RBFKernelSpec):
         inner = RBF(length_scale=kernel_spec.length_scale)
@@ -55,8 +49,8 @@ def build_kernel(kernel_spec: KernelSpec, constraints: KernelConstraints) -> Ker
 
     elif isinstance(kernel_spec, PeriodicNoConstKernelSpec):
         kwargs = {
-            "periodicity_bounds": constraints.PER.period,
-            "length_scale_bounds": constraints.PER.length_scale,
+            "periodicity_bounds": kernel_spec.period_bounds,
+            "length_scale_bounds": kernel_spec.length_scale_bounds,
         }
         inner = PeriodicKernelNoConstant(
             length_scale=kernel_spec.length_scale,
@@ -66,8 +60,8 @@ def build_kernel(kernel_spec: KernelSpec, constraints: KernelConstraints) -> Ker
 
     elif isinstance(kernel_spec, PeriodicKernelSpec):
         kwargs = {
-            "periodicity_bounds": constraints.PER.period,
-            "length_scale_bounds": constraints.PER.length_scale,
+            "periodicity_bounds": kernel_spec.period_bounds,
+            "length_scale_bounds": kernel_spec.length_scale_bounds,
         }
         inner = ExpSineSquared(
             length_scale=kernel_spec.length_scale,
@@ -81,12 +75,12 @@ def build_kernel(kernel_spec: KernelSpec, constraints: KernelConstraints) -> Ker
         )
 
     elif isinstance(kernel_spec, AdditiveKernelSpec):
-        inner = build_kernel_additive(kernel_spec, constraints)
+        inner = build_kernel_additive(kernel_spec)
 
     elif isinstance(kernel_spec, ProductKernelSpec):
         inner = ConstantKernel(constant_value=kernel_spec.scalar)
         for operand in kernel_spec.operands:
-            inner *= build_kernel(operand, constraints)
+            inner *= build_kernel(operand)
 
     else:
         print("invalid kernel_spec type -- type(kernel_spec):", type(kernel_spec))
@@ -94,7 +88,7 @@ def build_kernel(kernel_spec: KernelSpec, constraints: KernelConstraints) -> Ker
         raise TypeError("Invalid kernel spec type")
 
     if isinstance(kernel_spec, TopLevelKernelSpec):
-        inner = build_kernel_additive(kernel_spec, constraints)
+        inner = build_kernel_additive(kernel_spec)
         inner = inner + WhiteKernel(noise_level=kernel_spec.noise)
 
     return inner

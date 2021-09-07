@@ -32,10 +32,7 @@ class SklearnGPModel:
         self.data = data
         self.run_settings = run_settings
 
-        kernel = build_kernel(
-            kernel_spec,
-            constraints=self.run_settings.kernel_constraints,
-        )
+        kernel = build_kernel(kernel_spec)
 
         self.gp = GaussianProcessRegressor(
             kernel=kernel, alpha=alpha, normalize_y=False, n_restarts_optimizer=0

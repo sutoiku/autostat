@@ -1,8 +1,7 @@
 from autostat.decomposition import decompose_spec
 import time
-from typing import NamedTuple, Union, cast
+from typing import NamedTuple, cast
 
-from matplotlib import pyplot as plt
 import numpy as np
 from numpy.fft import fft, fftfreq
 
@@ -13,6 +12,7 @@ from .kernel_specs import (
     PeriodicKernelSpec,
     PeriodicNoConstKernelSpec,
 )
+
 
 from .dataset_adapters import Dataset
 
@@ -166,6 +166,7 @@ def kernel_search(
             base_kernel_prototypes = intialize_base_kernel_prototypes_from_residuals(
                 residuals, run_settings.base_kernel_prototypes
             )
+
             proto_str = "\n".join(str(k) for k in base_kernel_prototypes)
             logger.print(f"### prototype kernels from residuals:\n {proto_str}")
             specs = top_level_spec_swaps(
