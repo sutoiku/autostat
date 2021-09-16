@@ -9,15 +9,25 @@ An implementation of the Automatic Statistician algorithm
 
 ### to do / roadmap
 
+- parallelization of tree search
+
 - gpytorch:
 
   - add PERnc kernel
+    - getting numerical errors. crashing with: `gpytorch.utils.errors.NotPSDError: Matrix not positive definite after repeatedly adding jitter up to 1.0e-06.`
+    - on Mauna, PERnc doesn't seem to be updating in `scratch...`
+      - are the derivatives on it's params meaningful?
+      - is the kernel somehow frozen or being overwritten?
 
 - DECOMPOSITION
 
   - error per component
 
 - Kernels
+
+  - ADD CONSTANT KERNEL
+
+    - make sure gpytorch is using ZeroMean with constant kernel option
 
   - priors / constraints on kernels:
     - some limit on length scale for smoothing kernels? -- smoothing kernels should NOT pick up non-stationarity in a signal, that should be captured by a non stationary (polynomial trend etc kernel) kernel
@@ -31,7 +41,6 @@ An implementation of the Automatic Statistician algorithm
 
 - cross validation / overfitting
 
-- parallelism
 - remove dependencies on gpytorch and sklearn (move to separate modules)
 
 - server

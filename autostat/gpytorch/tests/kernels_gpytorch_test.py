@@ -45,6 +45,16 @@ def gpy_init_PER(lengthscale=1, periodicity=1):
     return k
 
 
+def gpy_init_PERnc(lengthscale=1, periodicity=1):
+    k = PeriodicKernel(
+        period_length_constraint=param_bounds_interval(),
+        lengthscale_constraint=param_bounds_interval(),
+    )
+    k.lengthscale = lengthscale
+    k.period_length = periodicity
+    return k
+
+
 def gpy_init_RBF(lengthscale=1):
     k = RBFKernel(lengthscale_constraint=param_bounds_interval())
     k.lengthscale = lengthscale
@@ -128,7 +138,7 @@ class TestToKernelSpec:
             [
                 gpy_wrap_scale_prod(
                     [
-                        gpy_init_PER(),
+                        gpy_init_PERnc(),
                         gpy_wrap_add(
                             [
                                 gpy_wrap_scale_prod([gpy_init_LIN()], 25),
