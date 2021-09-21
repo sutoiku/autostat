@@ -50,9 +50,7 @@ class Test_PeriodicKernelNoConstant:
         kernel.period_length = p
         X = torch.tensor([[0], [dist]])
         Gram = kernel(X, X).evaluate()
-        if l == 0.001 and p == 0.001:
-            target = 0.5
-        elif (l == 0.001 and p == 0.01) or (l == 0.01 and p == 0.001):
+        if l < 0.02 or p < 0.2:
             target = 2e-2
         else:
             target = 2e-4
@@ -69,7 +67,11 @@ class Test_PeriodicKernelNoConstant:
         k = Gram[0, 1]
         k.backward()
         dkdl_custom = kernel.get_parameter("raw_lengthscale").grad.item()
-        target = 2e-4
+
+        if l < 0.02 or p < 0.2:
+            target = 2e-2
+        else:
+            target = 2e-4
         assert np.abs(dkdl_custom - dKdl) < target
 
     @pytest.mark.parametrize("PERnc_case", PERnc_testValuesAndGrads[:])
@@ -83,9 +85,14 @@ class Test_PeriodicKernelNoConstant:
         k = Gram[0, 1]
         k.backward()
         dkdp_custom = kernel.get_parameter("raw_period_length").grad.item()
-        target = 2e-4
 
-        if abs(dKdp) > 5:
-            assert dkdp_custom / dKdp > 0 and dkdp_custom / dKdp < 1 + target
+        if l < 0.02 or p < 0.2:
+            target = 2e-2
+        else:
+            target = 2e-4
+
+        if abs(dKdp) > 4:
+            ratio = dkdp_custom / dKdp
+            assert 1 - target < ratio and ratio < 1 + target
         else:
             assert np.abs(dkdp_custom - dKdp) < target
