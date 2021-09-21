@@ -1,18 +1,10 @@
-#!/usr/bin/env python3
-
 import math
-
 import torch
 
-# from torch.special import i0e
-
-# from ..constraints import Positive
 from gpytorch.constraints import Positive
 from gpytorch.kernels import Kernel
 
-import numpy as np
 from scipy.special import i0e, i1e
-from torch._C import device
 
 
 class i0eTorchFunction(torch.autograd.Function):
@@ -36,11 +28,6 @@ class i0eTorchFunction(torch.autograd.Function):
 
 
 i0e_torch = i0eTorchFunction.apply
-
-# class PeriodicKernelNoConstantFunction(torch.autograd.Function):
-#     @staticmethod
-#     def forward(ctx, input):
-#         return result
 
 
 class PeriodicKernelNoConstant(Kernel):
@@ -160,11 +147,13 @@ class PeriodicKernelNoConstant(Kernel):
 
         expBess0 = i0e_torch(1 / self.lengthscale ** 2)
 
-        # TODO: test comment out version vs version below; compare scratch_gytorch output
-        # exp = diff_pi_over_period.sin().pow(2).sum(dim=-1).div(self.lengthscale**2).mul(-2.0).exp_()
-        
         exp = (
-            diff_pi_over_period.squeeze(-1).sin().div(self.lengthscale).mul(-2.0).exp_()
+            diff_pi_over_period.squeeze(-1)
+            .sin()
+            .div(self.lengthscale)
+            .pow(2)
+            .mul(-2.0)
+            .exp_()
         )
 
         res = (expBess0 - exp) / (expBess0 - 1)

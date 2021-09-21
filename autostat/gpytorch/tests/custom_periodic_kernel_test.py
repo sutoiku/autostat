@@ -9,8 +9,10 @@ from scipy.special import i0e
 from ...kernel_specs import PeriodicNoConstKernelSpec
 from ..kernel_builder import build_kernel
 
-def tensor(a:float)->torch.Tensor:
+
+def tensor(a: float) -> torch.Tensor:
     return torch.Tensor()
+
 
 class Test_i0e:
     def test_i0e_torch_call(self):
@@ -38,70 +40,52 @@ class Test_i0e:
         with pytest.raises(ValueError):
             i0e_torch(input)
 
-    
-    @pytest.mark.parametrize("PERnc_case", PERnc_testValuesAndGrads[:10])
-    def test_grad_length_scale(self, PERnc_case):
-        (dist,l,p),value,dKdl,dKdp = PERnc_case
-        spec = PeriodicNoConstKernelSpec(length_scale=l,period=p)
-        kernel = build_kernel(spec)
-        
 
+class Test_PeriodicKernelNoConstant:
+    @pytest.mark.parametrize("PERnc_case", PERnc_testValuesAndGrads[:])
+    def test_values_close(self, PERnc_case):
+        (value, dKdl, dKdp), dist, l, p = PERnc_case
+        kernel = PeriodicKernelNoConstant()
+        kernel.lengthscale = l
+        kernel.period_length = p
+        X = torch.tensor([[0], [dist]])
+        Gram = kernel(X, X).evaluate()
+        if l == 0.001 and p == 0.001:
+            target = 0.5
+        elif (l == 0.001 and p == 0.01) or (l == 0.01 and p == 0.001):
+            target = 2e-2
+        else:
+            target = 2e-4
+        assert np.abs(Gram[0, 1].item() - value) < target
 
+    @pytest.mark.parametrize("PERnc_case", PERnc_testValuesAndGrads[:])
+    def test_grad_length_scale_close(self, PERnc_case):
+        (value, dKdl, dKdp), dist, l, p = PERnc_case
+        kernel = PeriodicKernelNoConstant()
+        kernel.lengthscale = l
+        kernel.period_length = p
+        X = torch.tensor([[0], [dist]])
+        Gram = kernel(X, X).evaluate()
+        k = Gram[0, 1]
+        k.backward()
+        dkdl_custom = kernel.get_parameter("raw_lengthscale").grad.item()
+        target = 2e-4
+        assert np.abs(dkdl_custom - dKdl) < target
 
-    # @pytest.mark.parametrize("param_init_val", [0.001, 0.04, 0.3, 0.8, 1.5, 10.5, 15])
-    # def test_grad_length_scale(self, param_init_val):
-    #     param = "length_scale"
-    #     mat_slice = 0
+    @pytest.mark.parametrize("PERnc_case", PERnc_testValuesAndGrads[:])
+    def test_grad_periodicity_close(self, PERnc_case):
+        (value, dKdl, dKdp), dist, l, p = PERnc_case
+        kernel = PeriodicKernelNoConstant()
+        kernel.lengthscale = l
+        kernel.period_length = p
+        X = torch.tensor([[0], [dist]])
+        Gram = kernel(X, X).evaluate()
+        k = Gram[0, 1]
+        k.backward()
+        dkdp_custom = kernel.get_parameter("raw_period_length").grad.item()
+        target = 2e-4
 
-    #     N = 50
-    #     max_entry_diff = 0.01
-    #     max_mse = max_entry_diff ** 2
-    #     X = np.linspace([-1], [1], N)
-
-    #     delta = 1e-7
-
-    #     param_init = param_init_val
-
-    #     kwargs1 = {param: param_init}
-    #     k1 = PeriodicKernelNoConstant(**kwargs1)
-    #     kMat1, grads = k1(X, eval_gradient=True)
-
-    #     kwargs2 = {param: param_init + delta}
-    #     k2 = PeriodicKernelNoConstant(**kwargs2)
-    #     kMat2 = k2(X, eval_gradient=False)
-
-    #     grad = grads[:, :, mat_slice]
-    #     finite_diff_grad = (kMat2 - kMat1) / delta
-
-    #     assert np.mean((grad - finite_diff_grad) ** 2) < max_mse
-
-    # @pytest.mark.parametrize(
-    #     "param_init_val", [0.012, 0.04, 0.115, 0.15, 0.3, 0.8, 1.5, 10.5, 15]
-    # )
-    # def test_grad_periodicity(self, param_init_val):
-    #     param = "periodicity"
-    #     mat_slice = 1
-
-    #     N = 50
-    #     max_entry_diff = 0.01
-    #     max_mse = max_entry_diff ** 2
-    #     X = np.linspace([-1], [1], N)
-
-    #     # NOTE: we're at the limit of what finite differences can do...
-    #     # going from 1e-11 to 1e-12 makes the test _fail_ on th first case
-    #     delta = 1e-11
-
-    #     param_init = param_init_val
-
-    #     kwargs1 = {param: param_init}
-    #     k1 = PeriodicKernelNoConstant(**kwargs1)
-    #     kMat1, grads = k1(X, eval_gradient=True)
-
-    #     kwargs2 = {param: param_init + delta}
-    #     k2 = PeriodicKernelNoConstant(**kwargs2)
-    #     kMat2 = k2(X, eval_gradient=False)
-
-    #     grad = grads[:, :, mat_slice]
-    #     finite_diff_grad = (kMat2 - kMat1) / delta
-
-    #     assert np.mean((grad - finite_diff_grad) ** 2) < max_mse
+        if abs(dKdp) > 5:
+            assert dkdp_custom / dKdp > 0 and dkdp_custom / dKdp < 1 + target
+        else:
+            assert np.abs(dkdp_custom - dKdp) < target
