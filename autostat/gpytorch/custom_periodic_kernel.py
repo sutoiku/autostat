@@ -6,6 +6,8 @@ from gpytorch.kernels import Kernel
 
 from scipy.special import i0e, i1e
 
+import warnings
+
 
 class i0eTorchFunction(torch.autograd.Function):
     @staticmethod
@@ -131,7 +133,24 @@ class PeriodicKernelNoConstant(Kernel):
 
     @period_length.setter
     def period_length(self, value):
+        if value < 0.01:
+            warnings.warn(
+                "PeriodicKernelNoConstant suffers from numerical instability for small values of period_length",
+            )
         self._set_period_length(value)
+
+    @property
+    def lengthscale(self):
+        return super().lengthscale
+
+    @lengthscale.setter
+    def lengthscale(self, value):
+        if value < 0.01:
+            warnings.warn(
+                "PeriodicKernelNoConstant suffers from numerical instability for small values of lengthscale"
+            )
+        self._set_lengthscale(value)
+        # return super().lengthscale
 
     def _set_period_length(self, value):
         if not torch.is_tensor(value):
