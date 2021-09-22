@@ -18,12 +18,18 @@ from ..run_settings import RunSettings
 from ..dataset_adapters import Dataset, ModelPredictions
 from .kernel_builder import build_kernel
 from ..math import calc_bic
+from ..auto_gp_model import AutoGpModel
 
 torch.set_default_dtype(torch.float64)
 
 
+def castToTensor(obj) -> torch.Tensor:
+    return ty.cast(torch.Tensor, obj)
+
+
 class ExactGPModel(gp.models.ExactGP):
-    def __init__(self, train_x, train_y, likelihood, kernel):
+    def __init__(self, train_x, train_y, likelihood: gp.likelihoods.Likelihood, kernel):
+        self.likelihood = likelihood
         super(ExactGPModel, self).__init__(train_x, train_y, likelihood)
         self.mean_module = gp.means.ConstantMean()
         # self.mean_module = gp.means.ZeroMean()
@@ -35,7 +41,7 @@ class ExactGPModel(gp.models.ExactGP):
         return gp.distributions.MultivariateNormal(mean_x, covar_x)
 
 
-class GpytorchGPModel:
+class GpytorchGPModel(AutoGpModel):
     def __init__(
         self,
         kernel_spec: TopLevelKernelSpec,
@@ -85,14 +91,16 @@ class GpytorchGPModel:
             # Output from model
             output = self.model(self._np_to_dev_flat(self.data.train_x))
             # Calc loss and backprop gradients
-            loss = -self.mll(output, self._np_to_dev_flat(self.data.train_y))
+            loss = -castToTensor(
+                self.mll(output, self._np_to_dev_flat(self.data.train_y))
+            )
             loss.backward()
 
             optimizer.step()
 
             grad_str = "   " + "\n   ".join(
                 [
-                    f"{name}:  {str(p.grad.item())}"
+                    f"{name}:  {str(castToTensor(p.grad).item())}"
                     for name, p in list(self.model.named_parameters())
                 ]
             )
@@ -102,7 +110,7 @@ class GpytorchGPModel:
                 % (
                     i + 1,
                     loss.item(),
-                    self.model.likelihood.noise.item(),
+                    castToTensor(self.model.likelihood.noise).item(),
                     grad_str,
                 )
             )
@@ -118,14 +126,12 @@ class GpytorchGPModel:
             x = self._np_to_dev(self.data.train_x)
             Y = self.data.train_y
 
-            covar_module = ty.cast(torch.Tensor, self.model.covar_module(x))
+            covar_module = castToTensor(self.model.covar_module(x))
             L = covar_module.detach().cholesky().clone().cpu().numpy()
 
             # L = self.model.covar_module(x).detach().cholesky().clone().cpu().numpy()
             N = Y.shape[0]
-            sigma2 = ty.cast(
-                gp.likelihoods.GaussianLikelihood, self.model.likelihood
-            ).noise.item()
+            sigma2 = castToTensor(self.model.likelihood.noise).item()
 
             K = L @ L.T + sigma2 * np.eye(N)
             K_inv = np.linalg.inv(K)

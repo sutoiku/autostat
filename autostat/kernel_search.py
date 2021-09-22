@@ -3,28 +3,16 @@ import time
 from typing import NamedTuple, cast
 
 import numpy as np
-from numpy.fft import fft, fftfreq
 
 from .auto_gp_model import AutoGpModel
-from .kernel_specs import (
-    BaseKernelSpec,
-    TopLevelKernelSpec,
-    PeriodicKernelSpec,
-    PeriodicNoConstKernelSpec,
-)
-
-
+from .kernel_specs import TopLevelKernelSpec
 from .dataset_adapters import Dataset
-
-from .utils.logger import BasicLogger, Logger
-
+from .utils.logger import BasicLogger, Logger, QueingLogger
 from .kernel_swaps import top_level_spec_swaps
-
 from .run_settings import RunSettings
-
 from .plots import plot_decomposition, plot_model
-
 from .expand_spec import expand_spec
+from .kernel_spec_initialization import intialize_base_kernel_prototypes_from_residuals
 
 
 class ScoredKernelInfo(NamedTuple):
@@ -95,36 +83,12 @@ def score_kernel_specs(
         spec_str = spec.spec_str(False, False)
         if spec_str in kernel_scores:
             continue
+        local_logger = QueingLogger(logger)
         kernel_scores[spec_str] = score_kernel_spec(
-            spec, data, model_class, run_settings, logger
+            spec, data, model_class, run_settings, local_logger
         )
+        local_logger.flush_queue()
     return kernel_scores
-
-
-def init_period_from_residuals(residuals: np.ndarray) -> float:
-    residuals = residuals.flatten()
-    N = len(residuals)
-    yf = fft(residuals)[: N // 2]
-    T = 2 / N
-    xf = fftfreq(N, T)[: N // 2]
-    return 1 / xf[np.abs(yf) == max(np.abs(yf))][0]
-
-
-def intialize_base_kernel_prototypes_from_residuals(
-    residuals, base_kernel_prototypes: list[BaseKernelSpec]
-) -> list[BaseKernelSpec]:
-    protos: list[BaseKernelSpec] = []
-    for bk in base_kernel_prototypes:
-        if isinstance(bk, PeriodicKernelSpec) or isinstance(
-            bk, PeriodicNoConstKernelSpec
-        ):
-            period = init_period_from_residuals(residuals)
-            protos.append(
-                bk.clone_update({"period": period, "length_scale": period / 2})
-            )
-        else:
-            protos.append(bk.clone_update())
-    return protos
 
 
 def get_best_kernel_name_and_info(
