@@ -153,6 +153,8 @@ def kernel_search(
     logger = logger or BasicLogger()
     best_model = None
 
+    logger.print(str(run_settings.initial_kernels))
+
     for i in range(run_settings.max_search_depth):
         tic = time.perf_counter()
         logger.print(f"# DEPTH {i}")

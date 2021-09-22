@@ -61,14 +61,14 @@ files_sorted_by_num_data_points = [
     "07-call-centre.mat",
     # "08-radio.mat",
     "04-wheat.mat",
-    "02-solar.mat",
-    # "11-unemployment.mat",
+    # "02-solar.mat",
+    "11-unemployment.mat",
     # "10-sulphuric.mat",
     # "09-gas-production.mat",
     "03-mauna.mat",
     # "13-wages.mat",
     # "06-internet.mat",
-    # "05-temperature.mat",
+    "05-temperature.mat",
     # "12-births.mat",
 ]
 
@@ -76,7 +76,7 @@ if __name__ == "__main__":
     print("starting report")
 
     run_settings = RunSettings(
-        max_search_depth=1, expand_kernel_specs_as_sums=False
+        max_search_depth=3, expand_kernel_specs_as_sums=False
     ).replace_base_kernels_by_names(["PER", "LIN", "RBF"])
 
     logger.print(str(run_settings))
@@ -84,7 +84,7 @@ if __name__ == "__main__":
     for file_name in files_sorted_by_num_data_points:
         file_num = int(file_name[:2])
 
-        dataset = load_test_dataset(matlab_data_path, file_num, split=0.01)
+        dataset = load_test_dataset(matlab_data_path, file_num, split=0.1)
 
         run_settings = run_settings.replace_init_kernel_proto_constraints_using_dataset(
             dataset

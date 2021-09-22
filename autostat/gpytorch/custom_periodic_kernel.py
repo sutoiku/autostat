@@ -8,6 +8,8 @@ from scipy.special import i0e, i1e
 
 import warnings
 
+torch.set_default_dtype(torch.float64)
+
 
 class i0eTorchFunction(torch.autograd.Function):
     @staticmethod

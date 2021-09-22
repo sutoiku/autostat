@@ -19,11 +19,14 @@ from ..dataset_adapters import Dataset, ModelPredictions
 from .kernel_builder import build_kernel
 from ..math import calc_bic
 
+torch.set_default_dtype(torch.float64)
+
 
 class ExactGPModel(gp.models.ExactGP):
     def __init__(self, train_x, train_y, likelihood, kernel):
         super(ExactGPModel, self).__init__(train_x, train_y, likelihood)
         self.mean_module = gp.means.ConstantMean()
+        # self.mean_module = gp.means.ZeroMean()
         self.covar_module = kernel
 
     def forward(self, x):
@@ -54,8 +57,8 @@ class GpytorchGPModel:
         self.likelihood.initialize(noise=kernel_spec.noise)
 
         self.model = ExactGPModel(
-            self._np_to_dev(data.train_x).flatten(),
-            self._np_to_dev(data.train_y).flatten(),
+            self._np_to_dev_flat(data.train_x),
+            self._np_to_dev_flat(data.train_y),
             self.likelihood,
             self.built_kernel,
         ).to(self.device)
@@ -65,7 +68,47 @@ class GpytorchGPModel:
     def _np_to_dev(self, arr):
         return torch.from_numpy(arr).to(self.device)
 
+    def _np_to_dev_flat(self, arr):
+        return self._np_to_dev(arr).flatten()
+
+    def _fit_sgd_adam(self) -> None:
+
+        self.model.train()
+        self.likelihood.train()
+        optimizer = torch.optim.Adam(
+            self.model.parameters(), lr=0.1
+        )  # Includes GaussianLikelihood parameters
+
+        for i in range(50):
+            # Zero gradients from previous iteration
+            optimizer.zero_grad()
+            # Output from model
+            output = self.model(self._np_to_dev_flat(self.data.train_x))
+            # Calc loss and backprop gradients
+            loss = -self.mll(output, self._np_to_dev_flat(self.data.train_y))
+            loss.backward()
+
+            optimizer.step()
+
+            grad_str = "   " + "\n   ".join(
+                [
+                    f"{name}:  {str(p.grad.item())}"
+                    for name, p in list(self.model.named_parameters())
+                ]
+            )
+
+            print(
+                "Iter %d - Loss: %.3f   noise: %.3f;  grad:\n%s"
+                % (
+                    i + 1,
+                    loss.item(),
+                    self.model.likelihood.noise.item(),
+                    grad_str,
+                )
+            )
+
     def fit(self, data: Dataset) -> None:
+        # self._fit_sgd_adam()
         self.model.train()
         self.likelihood.train()
         fit_gpytorch_model(self.mll)

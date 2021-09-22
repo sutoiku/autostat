@@ -5,15 +5,24 @@ An implementation of the Automatic Statistician algorithm
 ## Problems
 
 - why does adding restarts degrade performance so badly for PER? How is the model finding _better_ optima when it deviates from the residual-based starting point?
-- product specs containing a sum operand have an extra scalar: $ s1 _ A _ (s2 _ B + s3 _ C)$ -- s1 is redundant, should just be 1
+- product specs containing a sum operand have an extra scalar: $ s_1 \*A \* (s_2\*B + s_3 \* C)$ -- s_1 is redundant, should just be 1
 
 ### to do / roadmap
+
+- constraints seemingly not enforced on Dataset: 11-unemployment.mat in file:///home/bc/STOIC/time_series_forecasts/autostat/integration-test-reports/reports/report_2021-09-21_16%3A48%3A39.html for PER:
+
+  - period_bounds=ConstraintBounds(lower=0.022619149694733665, upper=0.3596736412263738)
+  - but
+    - p=0.0197 at depth 1 PER\*RBF
+    - p=0.0001 at depth 3 LIN+PER
+
+- Change scaling / standardization method to avoid super small parameter values that lead to numerical instability for PERnc, possibly other kernels?
 
 - parallelization of tree search
 
 - gpytorch:
 
-  - add PERnc kernel
+  - PERnc kernel
     - getting numerical errors. crashing with: `gpytorch.utils.errors.NotPSDError: Matrix not positive definite after repeatedly adding jitter up to 1.0e-06.`
     - on Mauna, PERnc doesn't seem to be updating in `scratch...`
       - are the derivatives on it's params meaningful?
