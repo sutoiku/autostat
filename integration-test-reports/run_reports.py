@@ -93,7 +93,7 @@ if __name__ == "__main__":
         title_separator(f"Dataset: {file_name}")
         tic = time.perf_counter()
         kernel_scores = kernel_search(
-            dataset, GpytorchGPModel, run_settings=run_settings, logger=logger
+            dataset, SklearnGPModel, run_settings=run_settings, logger=logger
         )
         toc = time.perf_counter()
         logger.print(f"Total time for {file_name}: {toc-tic:.3f} s")

@@ -29,8 +29,9 @@ def castToTensor(obj) -> torch.Tensor:
 
 class ExactGPModel(gp.models.ExactGP):
     def __init__(self, train_x, train_y, likelihood: gp.likelihoods.Likelihood, kernel):
-        self.likelihood = likelihood
         super(ExactGPModel, self).__init__(train_x, train_y, likelihood)
+
+        self.likelihood = likelihood
         self.mean_module = gp.means.ConstantMean()
         # self.mean_module = gp.means.ZeroMean()
         self.covar_module = kernel
@@ -72,7 +73,8 @@ class GpytorchGPModel(AutoGpModel):
         self.mll = gp.mlls.ExactMarginalLogLikelihood(self.likelihood, self.model)
 
     def _np_to_dev(self, arr):
-        return torch.from_numpy(arr).to(self.device)
+
+        return torch.from_numpy(np.copy(arr)).to(self.device)
 
     def _np_to_dev_flat(self, arr):
         return self._np_to_dev(arr).flatten()

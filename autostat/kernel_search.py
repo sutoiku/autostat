@@ -1,94 +1,88 @@
 from autostat.decomposition import decompose_spec
 import time
 from typing import NamedTuple, cast
-
+import ray
 import numpy as np
 
 from .auto_gp_model import AutoGpModel
 from .kernel_specs import TopLevelKernelSpec
 from .dataset_adapters import Dataset
-from .utils.logger import BasicLogger, Logger, QueingLogger
+from .utils.logger import JupyterLogger, Logger, QueingLogger
 from .kernel_swaps import top_level_spec_swaps
 from .run_settings import RunSettings
 from .plots import plot_decomposition, plot_model
 from .expand_spec import expand_spec
 from .kernel_spec_initialization import intialize_base_kernel_prototypes_from_residuals
+from .parallel_score_specs import (
+    parallel_score_kernel_specs,
+    ScoredKernelInfo,
+    ScoreKernelSpecArgs,
+    KernelScores,
+)
 
 
-class ScoredKernelInfo(NamedTuple):
-    name: str
-    spec_pre_fit: TopLevelKernelSpec
-    spec_fitted: TopLevelKernelSpec
-    model: AutoGpModel
-    bic: float
-    log_likelihood: float
+# def score_kernel_spec(
+#     kernel_spec: TopLevelKernelSpec,
+#     data: Dataset,
+#     model_class: type[AutoGpModel],
+#     run_settings: RunSettings,
+#     logger: Logger = None,
+# ) -> ScoredKernelInfo:
+#     logger = logger or JupyterLogger()
+#     tic = time.perf_counter()
+
+#     model = model_class(kernel_spec, data, run_settings=run_settings)
+
+#     model.fit(data)
+
+#     log_likelihood = model.log_likelihood()
+#     num_params = kernel_spec.num_params()
+#     bic = model.bic()
+
+#     fig, ax = plot_model(model, data)
+
+#     fitted_spec = model.to_spec()
+
+#     spec_str = f"""{fitted_spec.spec_str(False,True)}
+# {fitted_spec.spec_str(False,False)} -- bic: {bic:.2f}, log likelihood: {log_likelihood:.3f}, M: {num_params}
+# {fitted_spec.spec_str(True,True)}"""
+
+#     ax.set_title(spec_str)
+
+#     toc = time.perf_counter()
+#     logger.print(f"**{fitted_spec.spec_str(False,True)}** -- fit in: {toc-tic:.3f} s")
+#     logger.show(fig)
+
+#     return ScoredKernelInfo(
+#         kernel_spec.spec_str(False, False),
+#         kernel_spec,
+#         fitted_spec,
+#         model,
+#         bic,
+#         log_likelihood,
+#     )
 
 
-KernelScores = dict[str, "ScoredKernelInfo"]
+# def score_kernel_specs(
+#     specs: list[TopLevelKernelSpec],
+#     data: Dataset,
+#     model_class: type[AutoGpModel],
+#     kernel_scores: KernelScores,
+#     run_settings: RunSettings,
+#     logger: Logger = None,
+# ) -> KernelScores:
+#     logger = logger or JupyterLogger()
 
-
-def score_kernel_spec(
-    kernel_spec: TopLevelKernelSpec,
-    data: Dataset,
-    model_class: type[AutoGpModel],
-    run_settings: RunSettings,
-    logger: Logger = None,
-) -> ScoredKernelInfo:
-    logger = logger or BasicLogger()
-    tic = time.perf_counter()
-
-    model = model_class(kernel_spec, data, run_settings=run_settings)
-
-    model.fit(data)
-
-    log_likelihood = model.log_likelihood()
-    num_params = kernel_spec.num_params()
-    bic = model.bic()
-
-    fig, ax = plot_model(model, data)
-
-    fitted_spec = model.to_spec()
-
-    spec_str = f"""{fitted_spec.spec_str(False,True)}
-{fitted_spec.spec_str(False,False)} -- bic: {bic:.2f}, log likelihood: {log_likelihood:.3f}, M: {num_params}
-{fitted_spec.spec_str(True,True)}"""
-
-    ax.set_title(spec_str)
-
-    toc = time.perf_counter()
-    logger.print(f"**{fitted_spec.spec_str(False,True)}** -- fit in: {toc-tic:.3f} s")
-    logger.show(fig)
-
-    return ScoredKernelInfo(
-        kernel_spec.spec_str(False, False),
-        kernel_spec,
-        fitted_spec,
-        model,
-        bic,
-        log_likelihood,
-    )
-
-
-def score_kernel_specs(
-    specs: list[TopLevelKernelSpec],
-    data: Dataset,
-    model_class: type[AutoGpModel],
-    kernel_scores: KernelScores,
-    run_settings: RunSettings,
-    logger: Logger = None,
-) -> KernelScores:
-    logger = logger or BasicLogger()
-
-    for spec in specs:
-        spec_str = spec.spec_str(False, False)
-        if spec_str in kernel_scores:
-            continue
-        local_logger = QueingLogger(logger)
-        kernel_scores[spec_str] = score_kernel_spec(
-            spec, data, model_class, run_settings, local_logger
-        )
-        local_logger.flush_queue()
-    return kernel_scores
+#     for spec in specs:
+#         spec_str = spec.spec_str(False, False)
+#         if spec_str in kernel_scores:
+#             continue
+#         local_logger = QueingLogger(logger)
+#         kernel_scores[spec_str] = score_kernel_spec(
+#             spec, data, model_class, run_settings, local_logger
+#         )
+#         local_logger.flush_queue()
+#     return kernel_scores
 
 
 def get_best_kernel_name_and_info(
@@ -114,10 +108,12 @@ def kernel_search(
 ) -> KernelScores:
 
     kernel_scores = kernel_scores or {}
-    logger = logger or BasicLogger()
+    logger = logger or JupyterLogger()
     best_model = None
 
     logger.print(str(run_settings.initial_kernels))
+
+    ray.init(num_cpus=8, ignore_reinit_error=True)
 
     for i in range(run_settings.max_search_depth):
         tic = time.perf_counter()
@@ -145,7 +141,7 @@ def kernel_search(
         logger.print("\n".join(["* " + str(sp) for sp in specs]))
 
         # score the kernels for this depth
-        kernel_scores = score_kernel_specs(
+        kernel_scores = parallel_score_kernel_specs(
             specs, data, model_class, kernel_scores, run_settings, logger
         )
 

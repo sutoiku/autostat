@@ -25,11 +25,9 @@ def plot_predictions(pred_x, pred_mean_y, lower_y, upper_y, ax):
 
 
 def plot_model(model: AutoGpModel, data: Dataset):
-    train_x, train_y, test_x, test_y = data
-
     fig, ax = plt.subplots(1, 1, figsize=(14, 3))
-    plot_observations(train_x, train_y, ax)
-    plot_observations(test_x, test_y, ax)
+    plot_observations(data.train_x, data.train_y, ax)
+    plot_observations(data.test_x, data.test_y, ax)
 
     y, l, u = model.predict(data.train_x)
 
