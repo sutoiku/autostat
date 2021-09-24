@@ -8,7 +8,7 @@ import numpy as np
 from .auto_gp_model import AutoGpModel
 from .kernel_specs import TopLevelKernelSpec
 from .dataset_adapters import Dataset
-from .utils.logger import JupyterLogger, Logger, QueingLogger
+from .utils.logger import JupyterLogger, Logger, SerializedLogQueue
 from .run_settings import RunSettings
 from .plots import plot_decomposition, plot_model
 
@@ -35,7 +35,7 @@ class ScoredKernelInfo(ty.NamedTuple):
 KernelScores = dict[str, "ScoredKernelInfo"]
 
 
-@ray.remote
+@ray.remote(num_gpus=0.4)
 def score_kernel_spec(args: ScoreKernelSpecArgs) -> tuple[ScoredKernelInfo, Logger]:
     (kernel_spec, data, model_class, run_settings, logger) = args
 
@@ -102,14 +102,14 @@ def parallel_score_kernel_specs(
     ray_run_settings = ray.put(run_settings)
 
     # score_args = [
-    #     (spec, ray_data, ray_model_class, ray_run_settings, QueingLogger())
+    #     (spec, ray_data, ray_model_class, ray_run_settings, SerializedLogQueue())
     #     for spec in specs
     # ]
     score_args = [
-        (spec, data, model_class, run_settings, QueingLogger()) for spec in specs
+        (spec, data, model_class, run_settings, SerializedLogQueue()) for spec in specs
     ]
 
-    kernel_scores_and_logs: list[tuple[ScoredKernelInfo, QueingLogger]] = ray.get(
+    kernel_scores_and_logs: list[tuple[ScoredKernelInfo, SerializedLogQueue]] = ray.get(
         [score_kernel_spec.remote(args) for args in score_args]
     )
     for _, logs in kernel_scores_and_logs:

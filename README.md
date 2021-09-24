@@ -9,6 +9,13 @@ An implementation of the Automatic Statistician algorithm
 
 ### to do / roadmap
 
+- catch errors and log
+
+- parallelization of tree search
+
+  - catch GPU memory errors and respawn
+  - can we autodetect GPU capacity and task memory usage somehow more granularly than as a proportion of a GPU?
+
 - constraints seemingly not enforced on Dataset: 11-unemployment.mat in file:///home/bc/STOIC/time_series_forecasts/autostat/integration-test-reports/reports/report_2021-09-21_16%3A48%3A39.html for PER:
 
   - period_bounds=ConstraintBounds(lower=0.022619149694733665, upper=0.3596736412263738)
@@ -18,8 +25,6 @@ An implementation of the Automatic Statistician algorithm
 
 - Change scaling / standardization method to avoid super small parameter values that lead to numerical instability for PERnc, possibly other kernels?
 
-- parallelization of tree search
-
 - gpytorch:
 
   - PERnc kernel
@@ -27,6 +32,7 @@ An implementation of the Automatic Statistician algorithm
     - on Mauna, PERnc doesn't seem to be updating in `scratch...`
       - are the derivatives on it's params meaningful?
       - is the kernel somehow frozen or being overwritten?
+    - GPU memory usage!
 
 - DECOMPOSITION
 

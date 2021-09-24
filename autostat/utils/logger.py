@@ -63,7 +63,7 @@ class JupyterLogger:
             )
 
 
-class QueingLogger:
+class SerializedLogQueue:
     def __init__(
         self,
     ) -> None:
@@ -81,8 +81,8 @@ class QueingLogger:
         while self.log_queue:
             item = self.log_queue.pop(0)
             if isinstance(item, HTMLStr):
-                logger.show(item)
+                logger.print(item)
             elif isinstance(item, str):
                 logger.print(item)
             else:
-                raise ValueError("QueingLogger only supports strings and Figures")
+                raise ValueError("SerializedLogQueue only supports strings and Figures")

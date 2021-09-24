@@ -7,7 +7,7 @@ import numpy as np
 from .auto_gp_model import AutoGpModel
 from .kernel_specs import TopLevelKernelSpec
 from .dataset_adapters import Dataset
-from .utils.logger import JupyterLogger, Logger, QueingLogger
+from .utils.logger import JupyterLogger, Logger, SerializedLogQueue
 from .kernel_swaps import top_level_spec_swaps
 from .run_settings import RunSettings
 from .plots import plot_decomposition, plot_model
@@ -77,7 +77,7 @@ from .parallel_score_specs import (
 #         spec_str = spec.spec_str(False, False)
 #         if spec_str in kernel_scores:
 #             continue
-#         local_logger = QueingLogger(logger)
+#         local_logger = SerializedLogQueue(logger)
 #         kernel_scores[spec_str] = score_kernel_spec(
 #             spec, data, model_class, run_settings, local_logger
 #         )

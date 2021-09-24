@@ -62,13 +62,13 @@ files_sorted_by_num_data_points = [
     # "08-radio.mat",
     "04-wheat.mat",
     # "02-solar.mat",
-    # "11-unemployment.mat",
+    "11-unemployment.mat",
     # "10-sulphuric.mat",
     # "09-gas-production.mat",
-    # "03-mauna.mat",
+    "03-mauna.mat",
     # "13-wages.mat",
     # "06-internet.mat",
-    # "05-temperature.mat",
+    "05-temperature.mat",
     # "12-births.mat",
 ]
 
@@ -76,7 +76,7 @@ if __name__ == "__main__":
     print("starting report")
 
     run_settings = RunSettings(
-        max_search_depth=2, expand_kernel_specs_as_sums=False
+        max_search_depth=3, expand_kernel_specs_as_sums=False
     ).replace_base_kernels_by_names(["PER", "LIN", "RBF"])
 
     logger.print(str(run_settings))
@@ -93,7 +93,7 @@ if __name__ == "__main__":
         title_separator(f"Dataset: {file_name}")
         tic = time.perf_counter()
         kernel_scores = kernel_search(
-            dataset, SklearnGPModel, run_settings=run_settings, logger=logger
+            dataset, GpytorchGPModel, run_settings=run_settings, logger=logger
         )
         toc = time.perf_counter()
         logger.print(f"Total time for {file_name}: {toc-tic:.3f} s")
