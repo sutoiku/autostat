@@ -142,19 +142,20 @@ class GpytorchGPModel(AutoGpModel):
         return (-0.5 * (Y.T @ K_inv @ Y + log_det_K + N * np.log(2 * np.pi))).item()
 
     def bic(self) -> float:
-        return calc_bic(
-            self.kernel_spec.num_params(),
-            self.data.train_x.shape[0],
-            self.log_likelihood(),
-        )
+        with torch.no_grad():
+            return calc_bic(
+                self.kernel_spec.num_params(),
+                self.data.train_x.shape[0],
+                self.log_likelihood(),
+            )
 
     def predict(self, x: ArrayLike) -> ModelPredictions:
-        x_torch = self._np_to_dev(x).flatten()
         self.model.eval()
         self.likelihood.eval()
 
         # Make predictions by feeding model through likelihood
         with torch.no_grad(), gp.settings.fast_pred_var():
+            x_torch = self._np_to_dev(x).flatten()
             observed_pred = ty.cast(
                 gp.distributions.MultivariateNormal,
                 self.likelihood(self.model(x_torch)),
@@ -169,11 +170,12 @@ class GpytorchGPModel(AutoGpModel):
             )
 
     def residuals(self) -> NDArray[np.float_]:
-        yHat, _, _ = self.predict(self.data.train_x)
-        yHat = yHat.flatten()
-        train_y = self.data.train_y.flatten()
-        residuals = train_y - yHat
-        return residuals
+        with torch.no_grad(), gp.settings.fast_pred_var():
+            yHat, _, _ = self.predict(self.data.train_x)
+            yHat = yHat.flatten()
+            train_y = self.data.train_y.flatten()
+            residuals = train_y - yHat
+            return residuals
 
     def to_spec(self) -> TopLevelKernelSpec:
         return to_kernel_spec(self.built_kernel, float(self.likelihood.noise.item()))

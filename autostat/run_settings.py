@@ -1,9 +1,10 @@
-from .dataset_adapters import Dataset
 from dataclasses import dataclass, field, replace
 import typing as ty
 
-from .constraints import update_kernel_protos_constrained_with_data
+from enum import Enum
 
+from .constraints import update_kernel_protos_constrained_with_data
+from .dataset_adapters import Dataset
 
 import inspect
 import autostat.kernel_specs as ks
@@ -71,6 +72,11 @@ def kernel_protos_from_names(base_kernel_shortnames: list[str]):
 ####
 
 
+class Backend(Enum):
+    SKLEARN = 0
+    GPYTORCH = 1
+
+
 @dataclass(frozen=True)
 class RunSettings:
     initial_kernels: list[TopLevelKernelSpec] = field(
@@ -85,6 +91,14 @@ class RunSettings:
 
     log_level: None = None
     max_search_depth: int = 5
+
+    use_parallel: bool = False
+    use_gpu: bool = False
+    backend: Backend = Backend.SKLEARN
+    num_cpus: int = 10
+    num_gpus: int = 1
+    gpu_max_simultaneous: int = 2
+    gpu_memory_share_needed: float = 0.4
 
     def replace_base_kernels_by_names(self, names: list[str]) -> "RunSettings":
         return replace(self, base_kernel_prototypes=kernel_protos_from_names(names))

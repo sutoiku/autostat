@@ -1,9 +1,5 @@
 from autostat.run_settings import RunSettings
 
-# from autostat.utils.mauna_data_loader import load_mauna_numpy, scale_split
-from autostat.sklearn.model_wrapper import SklearnGPModel
-
-from autostat.gpytorch.model_wrapper import GpytorchGPModel
 
 from autostat.kernel_search import kernel_search
 
@@ -57,8 +53,8 @@ def title_separator(title):
 matlab_data_path = "data/"
 
 files_sorted_by_num_data_points = [
-    "01-airline.mat",
-    "07-call-centre.mat",
+    # "01-airline.mat",
+    # "07-call-centre.mat",
     # "08-radio.mat",
     "04-wheat.mat",
     # "02-solar.mat",
@@ -76,7 +72,12 @@ if __name__ == "__main__":
     print("starting report")
 
     run_settings = RunSettings(
-        max_search_depth=3, expand_kernel_specs_as_sums=False
+        max_search_depth=3,
+        expand_kernel_specs_as_sums=False,
+        num_cpus=1,
+        use_gpu=False,
+        use_parallel=True,
+        gpu_memory_share_needed=0.45,
     ).replace_base_kernels_by_names(["PER", "LIN", "RBF"])
 
     logger.print(str(run_settings))
@@ -92,9 +93,7 @@ if __name__ == "__main__":
 
         title_separator(f"Dataset: {file_name}")
         tic = time.perf_counter()
-        kernel_scores = kernel_search(
-            dataset, GpytorchGPModel, run_settings=run_settings, logger=logger
-        )
+        kernel_scores = kernel_search(dataset, run_settings=run_settings, logger=logger)
         toc = time.perf_counter()
         logger.print(f"Total time for {file_name}: {toc-tic:.3f} s")
 

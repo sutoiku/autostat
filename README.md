@@ -9,7 +9,7 @@ An implementation of the Automatic Statistician algorithm
 
 ### to do / roadmap
 
-- catch errors and log
+- catch errors and log instead of crashing when a spec fit crashes
 
 - parallelization of tree search
 
@@ -80,4 +80,4 @@ An implementation of the Automatic Statistician algorithm
 - block matrix inversion:
   - http://www.math.chalmers.se/~rootzen/highdimensional/blockmatrixinverse.pdf
 
-### implementation notes and tricks:
+### algorithm notes and tricks:
