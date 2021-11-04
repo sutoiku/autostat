@@ -26,8 +26,12 @@ def intialize_base_kernel_prototypes_from_residuals(
             bk, PeriodicNoConstKernelSpec
         ):
             period = init_period_from_residuals(residuals)
+            period = np.clip(period, *bk.period_bounds)
+
+            length_scale = np.clip(period / 2, *bk.length_scale_bounds)
+
             protos.append(
-                bk.clone_update({"period": period, "length_scale": period / 2})
+                bk.clone_update({"period": period, "length_scale": length_scale})
             )
         else:
             protos.append(bk.clone_update())

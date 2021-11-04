@@ -1,4 +1,4 @@
-from autostat.run_settings import RunSettings
+from autostat.run_settings import RunSettings, Backend
 
 
 from autostat.kernel_search import kernel_search
@@ -30,7 +30,10 @@ class HtmlLogger:
         self.report = report
 
     def print(self, s: str) -> None:
-        self.report.add_markdown(s.replace("\n", "\n\n"))
+        self.report.add_markdown(
+            s.replace("\n", "\n\n")
+            # .replace("<", "&lt;").replace(">", "&gt;")
+        )
 
     def show(self, fig) -> None:
         plt.tight_layout(rect=(0, 0, 1, 0.95))
@@ -53,7 +56,7 @@ def title_separator(title):
 matlab_data_path = "data/"
 
 files_sorted_by_num_data_points = [
-    # "01-airline.mat",
+    "01-airline.mat",
     # "07-call-centre.mat",
     # "08-radio.mat",
     "04-wheat.mat",
@@ -65,7 +68,7 @@ files_sorted_by_num_data_points = [
     # "13-wages.mat",
     # "06-internet.mat",
     "05-temperature.mat",
-    # "12-births.mat",
+    "12-births.mat",
 ]
 
 if __name__ == "__main__":
@@ -74,20 +77,23 @@ if __name__ == "__main__":
     run_settings = RunSettings(
         max_search_depth=3,
         expand_kernel_specs_as_sums=False,
-        num_cpus=1,
+        num_cpus=12,
         use_gpu=False,
         use_parallel=True,
         gpu_memory_share_needed=0.45,
+        backend=Backend.SKLEARN,
     ).replace_base_kernels_by_names(["PER", "LIN", "RBF"])
 
     logger.print(str(run_settings))
+
+    logger.print("\n" + str(run_settings.asdict()))
 
     for file_name in files_sorted_by_num_data_points:
         file_num = int(file_name[:2])
 
         dataset = load_test_dataset(matlab_data_path, file_num, split=0.1)
 
-        run_settings = run_settings.replace_init_kernel_proto_constraints_using_dataset(
+        run_settings = run_settings.replace_kernel_proto_constraints_using_dataset(
             dataset
         )
 

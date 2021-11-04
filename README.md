@@ -11,11 +11,6 @@ An implementation of the Automatic Statistician algorithm
 
 - catch errors and log instead of crashing when a spec fit crashes
 
-- parallelization of tree search
-
-  - catch GPU memory errors and respawn
-  - can we autodetect GPU capacity and task memory usage somehow more granularly than as a proportion of a GPU?
-
 - constraints seemingly not enforced on Dataset: 11-unemployment.mat in file:///home/bc/STOIC/time_series_forecasts/autostat/integration-test-reports/reports/report_2021-09-21_16%3A48%3A39.html for PER:
 
   - period_bounds=ConstraintBounds(lower=0.022619149694733665, upper=0.3596736412263738)
@@ -23,7 +18,8 @@ An implementation of the Automatic Statistician algorithm
     - p=0.0197 at depth 1 PER\*RBF
     - p=0.0001 at depth 3 LIN+PER
 
-- Change scaling / standardization method to avoid super small parameter values that lead to numerical instability for PERnc, possibly other kernels?
+
+- Change scaling / standardization method to avoid super small parameter values that lead to numerical instability for PERnc, possibly other kernels? When everything is scaled into [-1, 1], data points can end up very close to each other, which can cause numerical issues especially with PERnc
 
 - gpytorch:
 
@@ -33,10 +29,6 @@ An implementation of the Automatic Statistician algorithm
       - are the derivatives on it's params meaningful?
       - is the kernel somehow frozen or being overwritten?
     - GPU memory usage!
-
-- DECOMPOSITION
-
-  - error per component
 
 - Kernels
 
@@ -54,7 +46,18 @@ An implementation of the Automatic Statistician algorithm
     - remove components with coef less than some value
     - prior on spacing of params for kernels of same type -- i.e., if RBF+RBF, length scales must differ by some amount (strong prior against close values), or if PER+PER, strong prior against similar periods
 
-- cross validation / overfitting
+
+- cross validation / overfitting / HYPERPARAMETERS
+  - are there hyperparameters that could be tuned across data sets to get better out-of-sample likelihood?
+    - parameter constraints
+    - kernel penalties
+    - kernel scoring function (alternative to BIC?)
+
+- parallelization of tree search
+
+  - NOT REALLY WORKING FOR GPU
+    - catch GPU memory errors and respawn -- NOT WORKING
+    - can we autodetect GPU capacity and task memory usage somehow more granularly than as a proportion of a GPU?
 
 - remove dependencies on gpytorch and sklearn (move to separate modules)
 

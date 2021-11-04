@@ -18,6 +18,7 @@ from .score_specs import (
     ScoredKernelInfo,
     KernelScores,
 )
+from .constraints import set_constraints_on_spec
 
 
 from autostat.sklearn.model_wrapper import SklearnGPModel
@@ -81,7 +82,7 @@ def kernel_search(
                 run_settings.expand_kernel_specs_as_sums,
             )
             new_specs = [
-                spec
+                set_constraints_on_spec(spec, run_settings.base_kernel_prototypes)
                 for spec in specs
                 if spec.spec_str(False, False) not in kernel_scores
             ]
