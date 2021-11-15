@@ -14,5 +14,5 @@ class Dataset:
 
 class ModelPredictions(ty.NamedTuple):
     y: NDArray[np.float_]
-    lower: NDArray[np.float_]
-    upper: NDArray[np.float_]
+    std: NDArray[np.float_]
+    # upper: NDArray[np.float_]

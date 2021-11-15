@@ -128,11 +128,11 @@ def find_best_kernel_and_predict(
     data: Dataset,
     run_settings: RunSettings,
     kernel_scores: KernelScores = None,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     kernel_scores = kernel_search(
         data, run_settings=run_settings, kernel_scores=kernel_scores
     )
     best_kernel_info = get_best_kernel_info(kernel_scores)
 
     best_model = cast(AutoGpModel, best_kernel_info.model)
-    return best_model.predict(data.test_x)
+    return best_model.predict_test()

@@ -107,6 +107,8 @@ class RunSettings:
     gpu_max_simultaneous: int = 2
     gpu_memory_share_needed: float = 0.4
 
+    get_prediction_likelihoods: bool = True
+
     def replace_base_kernels_by_names(self, names: list[str]) -> "RunSettings":
         return replace(self, base_kernel_prototypes=kernel_protos_from_names(names))
 

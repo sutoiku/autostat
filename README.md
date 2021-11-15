@@ -9,15 +9,17 @@ An implementation of the Automatic Statistician algorithm
 
 ### to do / roadmap
 
-- catch errors and log instead of crashing when a spec fit crashes
+#### REFINE FITS
 
-- constraints seemingly not enforced on Dataset: 11-unemployment.mat in file:///home/bc/STOIC/time_series_forecasts/autostat/integration-test-reports/reports/report_2021-09-21_16%3A48%3A39.html for PER:
+- cross validation / overfitting / HYPERPARAMETERS
 
-  - period_bounds=ConstraintBounds(lower=0.022619149694733665, upper=0.3596736412263738)
-  - but
-    - p=0.0197 at depth 1 PER\*RBF
-    - p=0.0001 at depth 3 LIN+PER
-
+  - are there hyperparameters that could be tuned across data sets to get better out-of-sample likelihood?
+    - parameter constraints
+    - kernel penalties
+    - kernel scoring function (alternative to BIC?)
+    - data rescaling parameters
+    - noise component inflation
+  - NEED OUT OF SAMPLE PREDICTION QUALITY MEASUREMENT
 
 - Change scaling / standardization method to avoid super small parameter values that lead to numerical instability for PERnc, possibly other kernels? When everything is scaled into [-1, 1], data points can end up very close to each other, which can cause numerical issues especially with PERnc
 
@@ -46,18 +48,9 @@ An implementation of the Automatic Statistician algorithm
     - remove components with coef less than some value
     - prior on spacing of params for kernels of same type -- i.e., if RBF+RBF, length scales must differ by some amount (strong prior against close values), or if PER+PER, strong prior against similar periods
 
+#### CODE CLEANUP, OTHER IMPROVEMENTS
 
-- cross validation / overfitting / HYPERPARAMETERS
-  - are there hyperparameters that could be tuned across data sets to get better out-of-sample likelihood?
-    - parameter constraints
-    - kernel penalties
-    - kernel scoring function (alternative to BIC?)
-
-- parallelization of tree search
-
-  - NOT REALLY WORKING FOR GPU
-    - catch GPU memory errors and respawn -- NOT WORKING
-    - can we autodetect GPU capacity and task memory usage somehow more granularly than as a proportion of a GPU?
+- catch errors and log instead of crashing when a spec fit crashes
 
 - remove dependencies on gpytorch and sklearn (move to separate modules)
 
@@ -66,6 +59,12 @@ An implementation of the Automatic Statistician algorithm
 - periodic time series
 
   - toeplitz matrix inversion for dense periodic series
+
+- parallelization of tree search
+
+  - NOT REALLY WORKING FOR GPU
+    - catch GPU memory errors and respawn -- NOT WORKING
+    - can we autodetect GPU capacity and task memory usage somehow more granularly than as a proportion of a GPU?
 
 ### see:
 

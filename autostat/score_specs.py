@@ -33,6 +33,7 @@ class ScoredKernelInfo(ty.NamedTuple):
     model: AutoGpModel
     bic: float
     log_likelihood: float
+    prediction_score: ty.Union[float, None] = None
 
     # def clear_model
 
@@ -50,53 +51,57 @@ def score_kernel_spec(
 ) -> tuple[ty.Union[ScoredKernelInfo, None], SerializedLogQueue]:
     (kernel_spec, data, model_class, run_settings, logger) = args
 
-    try:
-        tic = time.perf_counter()
+    # try:
+    tic = time.perf_counter()
 
-        model = model_class(kernel_spec, data, run_settings=run_settings)
+    model = model_class(kernel_spec, data, run_settings=run_settings)
 
-        model.fit(data)
+    model.fit(data)
 
-        log_likelihood = model.log_likelihood()
-        num_params = kernel_spec.num_params()
-        bic = model.bic()
+    log_likelihood = model.log_likelihood()
+    num_params = kernel_spec.num_params()
+    bic = model.bic()
 
-        fig, ax = plot_model(model, data)
+    fig, ax = plot_model(model, data)
 
-        fitted_spec = model.to_spec()
+    prediction_log_likelihood = model.prediction_log_prob_score()
+    # prediction_log_likelihood = 2.1
 
-        spec_str = f"""{fitted_spec.spec_str(False,True)}
-    {fitted_spec.spec_str(False,False)} -- bic: {bic:.2f}, log likelihood: {log_likelihood:.3f}, M: {num_params}
-    {fitted_spec.spec_str(True,True)}"""
+    fitted_spec = model.to_spec()
 
-        ax.set_title(spec_str)
+    spec_str = f"""{fitted_spec.spec_str(False,True)}   --  {fitted_spec.spec_str(False,False)}
+bic: {bic:.2f}, M: {num_params}, log likelihood: {log_likelihood:.3f}, pred. score: {prediction_log_likelihood:.3f}
+{fitted_spec.spec_str(True,True)}"""
 
-        toc = time.perf_counter()
-        logger.print(
-            f"**{fitted_spec.spec_str(False,True)}** -- fit in: {toc-tic:.3f} s"
-        )
-        logger.show(fig)
+    ax.set_title(spec_str)
 
-        return (
-            ScoredKernelInfo(
-                kernel_spec.spec_str(False, False),
-                kernel_spec,
-                fitted_spec,
-                model,
-                bic,
-                log_likelihood,
-            ),
-            logger,
-        )
-    except Exception as e:
-        logger.print(
-            f"""
-## Failed to fit {kernel_spec.schema()}
-Error:
-{str(e)}
-"""
-        )
-        return (None, logger)
+    toc = time.perf_counter()
+    logger.print(f"**{fitted_spec.spec_str(False,True)}** -- fit in: {toc-tic:.3f} s")
+    logger.show(fig)
+
+    return (
+        ScoredKernelInfo(
+            kernel_spec.spec_str(False, False),
+            kernel_spec,
+            fitted_spec,
+            model,
+            bic,
+            log_likelihood,
+            prediction_log_likelihood,
+        ),
+        logger,
+    )
+
+
+#     except Exception as e:
+#         logger.print(
+#             f"""
+# ## Failed to fit {kernel_spec.schema()}
+# Error:
+# {str(e)}
+# """
+#         )
+#         return (None, logger)
 
 
 def score_kernel_specs(
