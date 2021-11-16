@@ -1,152 +1,184 @@
-from sklearn.gaussian_process.kernels import (
-    Kernel,
-    StationaryKernelMixin,
-    NormalizedKernelMixin,
-    Hyperparameter,
-)
+import math
+import torch
 
-from scipy.special import iv, ive
+from gpytorch.constraints import Positive
+from gpytorch.kernels import Kernel
 
-import numpy as np
+from scipy.special import i0e, i1e
 
-# from scipy.special import kv, gamma
-from scipy.spatial.distance import pdist, cdist, squareform
+import warnings
+
+torch.set_default_dtype(torch.float64)
 
 
-class PeriodicKernelNoConstant(StationaryKernelMixin, NormalizedKernelMixin, Kernel):
-    r"""Periodic kernel "without constant"
-    Described in appendix A of https://arxiv.org/pdf/1402.4304.pdf
+class i0eTorchFunction(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, input):
+        device = input.device
+        if torch.any(input < 0):
+            raise ValueError("i0eTorchFunction only accepts positive inputs")
+        input_np = input.detach().cpu().numpy()
+        result_np = i0e(input_np)
+        result = torch.from_numpy(result_np).to(device)
+        ctx.save_for_backward(input, result)
+        return result
 
-    https://github.com/jamesrobertlloyd/gpss-research/blob/master/source/matlab/custom-cov/covPeriodicNoDC.m
+    @staticmethod
+    def backward(ctx, grad_output):
+        input, result = ctx.saved_tensors
+        device = input.device
+        g = torch.from_numpy(i1e(input.detach().cpu().numpy())).to(device) - result
+        return g * grad_output
 
-    .. versionadded:: 0.18
-    Parameters
-    ----------
-    length_scale : float > 0, default=1.0
-        The length scale of the kernel.
-    periodicity : float > 0, default=1.0
-        The periodicity of the kernel.
-    length_scale_bounds : pair of floats >= 0 or "fixed", default=(1e-5, 1e5)
-        The lower and upper bound on 'length_scale'.
-        If set to "fixed", 'length_scale' cannot be changed during
-        hyperparameter tuning.
-    periodicity_bounds : pair of floats >= 0 or "fixed", default=(1e-5, 1e5)
-        The lower and upper bound on 'periodicity'.
-        If set to "fixed", 'periodicity' cannot be changed during
-        hyperparameter tuning.
 
+i0e_torch = i0eTorchFunction.apply
+
+
+class PeriodicKernelNoConstant(Kernel):
+    r"""Computes a covariance matrix based on the periodic kernel
+    between inputs :math:`\mathbf{x_1}` and :math:`\mathbf{x_2}`:
+
+    .. math::
+
+        \begin{equation*}
+            k_{\text{Periodic}}(\mathbf{x_1}, \mathbf{x_2}) = \exp \left(
+            -2 \sum_i
+            \frac{\sin ^2 \left( \frac{\pi}{p} (\mathbf{x_{1,i}} - \mathbf{x_{2,i}} ) \right)}{\lambda}
+            \right)
+        \end{equation*}
+
+    where
+
+    * :math:`p` is the period length parameter.
+    * :math:`\lambda` is a lengthscale parameter.
+
+    Equation is based on [David Mackay's Introduction to Gaussian Processes equation 47]
+    (http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.81.1927&rep=rep1&type=pdf)
+    albeit without feature-specific lengthscales and period lengths. The exponential
+    coefficient was changed and lengthscale is not squared to maintain backwards compatibility
+
+    .. note::
+
+        This kernel does not have an `outputscale` parameter. To add a scaling parameter,
+        decorate this kernel with a :class:`gpytorch.kernels.ScaleKernel`.
+
+    .. note::
+
+        This kernel does not have an ARD lengthscale or period length option.
+
+    Args:
+        :attr:`batch_shape` (torch.Size, optional):
+            Set this if you want a separate lengthscale for each
+             batch of input data. It should be `b` if :attr:`x1` is a `b x n x d` tensor. Default: `torch.Size([])`.
+        :attr:`active_dims` (tuple of ints, optional):
+            Set this if you want to compute the covariance of only a few input dimensions. The ints
+            corresponds to the indices of the dimensions. Default: `None`.
+        :attr:`period_length_prior` (Prior, optional):
+            Set this if you want to apply a prior to the period length parameter.  Default: `None`.
+        :attr:`lengthscale_prior` (Prior, optional):
+            Set this if you want to apply a prior to the lengthscale parameter.  Default: `None`.
+        :attr:`lengthscale_constraint` (Constraint, optional):
+            Set this if you want to apply a constraint to the value of the lengthscale. Default: `Positive`.
+        :attr:`period_length_constraint` (Constraint, optional):
+            Set this if you want to apply a constraint to the value of the period length. Default: `Positive`.
+        :attr:`eps` (float):
+            The minimum value that the lengthscale/period length can take
+            (prevents divide by zero errors). Default: `1e-6`.
+
+    Attributes:
+        :attr:`lengthscale` (Tensor):
+            The lengthscale parameter. Size = `*batch_shape x 1 x 1`.
+        :attr:`period_length` (Tensor):
+            The period length parameter. Size = `*batch_shape x 1 x 1`.
+
+    Example:
+        >>> x = torch.randn(10, 5)
+        >>> # Non-batch: Simple option
+        >>> covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.PeriodicKernelNoConstant())
+        >>>
+        >>> batch_x = torch.randn(2, 10, 5)
+        >>> # Batch: Simple option
+        >>> covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.PeriodicKernelNoConstant())
+        >>> # Batch: different lengthscale for each batch
+        >>> covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.PeriodicKernelNoConstant(batch_size=2))
+        >>> covar = covar_module(x)  # Output: LazyVariable of size (2 x 10 x 10)
     """
 
+    has_lengthscale = True
+
     def __init__(
-        self,
-        length_scale=1.0,
-        periodicity=1.0,
-        length_scale_bounds=(1e-5, 1e5),
-        periodicity_bounds=(1e-5, 1e5),
+        self, period_length_prior=None, period_length_constraint=None, **kwargs
     ):
-        self.length_scale: float = length_scale
-        self.periodicity: float = periodicity
-        self.length_scale_bounds: float = length_scale_bounds
-        self.periodicity_bounds: float = periodicity_bounds
+        super(PeriodicKernelNoConstant, self).__init__(**kwargs)
 
-    @property
-    def hyperparameter_length_scale(self):
-        """Returns the length scale"""
-        return Hyperparameter("length_scale", "numeric", self.length_scale_bounds)
+        if period_length_constraint is None:
+            period_length_constraint = Positive()
 
-    @property
-    def hyperparameter_periodicity(self):
-        return Hyperparameter("periodicity", "numeric", self.periodicity_bounds)
-
-    def __call__(self, X, Y=None, eval_gradient=False):
-        """Return the kernel k(X, Y) and optionally its gradient.
-        Parameters
-        ----------
-        X : ndarray of shape (n_samples_X, n_features)
-            Left argument of the returned kernel k(X, Y)
-        Y : ndarray of shape (n_samples_Y, n_features), default=None
-            Right argument of the returned kernel k(X, Y). If None, k(X, X)
-            if evaluated instead.
-        eval_gradient : bool, default=False
-            Determines whether the gradient with respect to the log of
-            the kernel hyperparameter is computed.
-            Only supported when Y is None.
-        Returns
-        -------
-        K : ndarray of shape (n_samples_X, n_samples_Y)
-            Kernel k(X, Y)
-        K_gradient : ndarray of shape (n_samples_X, n_samples_X, n_dims), \
-                optional
-            The gradient of the kernel k(X, X) with respect to the log of the
-            hyperparameter of the kernel. Only returned when `eval_gradient`
-            is True.
-        """
-        X = np.atleast_2d(X)
-        if Y is None:
-            dists = squareform(pdist(X, metric="euclidean"))
-        else:
-            if eval_gradient:
-                raise ValueError("Gradient can only be evaluated when Y is None.")
-            dists = cdist(X, Y, metric="euclidean")
-
-        l = self.length_scale
-        p = self.periodicity
-
-        e_bess_0 = ive(0, 1 / l ** 2)
-
-        period_dist = (dists * np.pi) / p
-
-        S = -2 * np.sin(period_dist) ** 2
-        exp_S_over_lsqr = np.exp(S / l ** 2)
-
-        K = (e_bess_0 - exp_S_over_lsqr) / (e_bess_0 - 1)
-
-        if eval_gradient:
-            # gradient with respect to length_scale
-            if not self.hyperparameter_length_scale.fixed:
-                # NOTE: we're deviating from the matlab source:
-                #  https://github.com/jamesrobertlloyd/gpss-research/blob/master/source/gpml/cov/covPeriodicNoDC.m
-                # because comparison with finite differences suggested that
-                # having a specialized version for (1/l**2) < 3.75 performed
-                # worse than using this single implementation in all cases
-
-                e_bess_1 = ive(1, 1 / l ** 2)
-
-                numerator = 2 * (
-                    -e_bess_0
-                    + e_bess_1
-                    + exp_S_over_lsqr * (1 - e_bess_1 + (e_bess_0 - 1) * (1 + S))
-                )
-
-                denominator = (e_bess_0 - 1) ** 2 * l ** 3
-
-                length_scale_gradient = numerator / denominator
-                length_scale_gradient = length_scale_gradient[:, :, np.newaxis]
-
-            else:  # length_scale is kept fixed
-                length_scale_gradient = np.empty((K.shape[0], K.shape[1], 0))
-
-            # gradient with respect to p
-            if not self.hyperparameter_periodicity.fixed:
-
-                numerator = (
-                    2 * dists * exp_S_over_lsqr * np.pi * np.sin(2 * period_dist)
-                )
-
-                denominator = (e_bess_0 - 1) * (l * p) ** 2
-
-                periodicity_gradient = -numerator / denominator
-                periodicity_gradient = periodicity_gradient[:, :, np.newaxis]
-
-            else:  # p is kept fixed
-                periodicity_gradient = np.empty((K.shape[0], K.shape[1], 0))
-
-            return K, np.dstack((length_scale_gradient, periodicity_gradient))
-
-        else:
-            return K
-
-    def __repr__(self):
-        return "{0}(length_scale={1:.3g}, periodicity={2:.3g})".format(
-            self.__class__.__name__, self.length_scale, self.periodicity
+        self.register_parameter(
+            name="raw_period_length",
+            parameter=torch.nn.Parameter(torch.zeros(*self.batch_shape, 1, 1)),
         )
+
+        if period_length_prior is not None:
+            self.register_prior(
+                "period_length_prior",
+                period_length_prior,
+                lambda m: m.period_length,
+                lambda m, v: m._set_period_length(v),
+            )
+
+        self.register_constraint("raw_period_length", period_length_constraint)
+
+    @property
+    def period_length(self):
+        return self.raw_period_length_constraint.transform(self.raw_period_length)
+
+    @period_length.setter
+    def period_length(self, value):
+        if value < 0.01:
+            warnings.warn(
+                "PeriodicKernelNoConstant suffers from numerical instability for small values of period_length",
+            )
+        self._set_period_length(value)
+
+    @property
+    def lengthscale(self):
+        return super().lengthscale
+
+    @lengthscale.setter
+    def lengthscale(self, value):
+        if value < 0.01:
+            warnings.warn(
+                "PeriodicKernelNoConstant suffers from numerical instability for small values of lengthscale"
+            )
+        self._set_lengthscale(value)
+        # return super().lengthscale
+
+    def _set_period_length(self, value):
+        if not torch.is_tensor(value):
+            value = torch.as_tensor(value).to(self.raw_period_length)
+        self.initialize(
+            raw_period_length=self.raw_period_length_constraint.inverse_transform(value)
+        )
+
+    def forward(self, x1, x2, diag=False, **params):
+        x1_ = x1.div(self.period_length).mul(math.pi)
+        x2_ = x2.div(self.period_length).mul(math.pi)
+        diff_pi_over_period = x1_.unsqueeze(-2) - x2_.unsqueeze(-3)
+
+        expBess0 = i0e_torch(1 / self.lengthscale ** 2)
+
+        exp = (
+            diff_pi_over_period.squeeze(-1)
+            .sin()
+            .div(self.lengthscale)
+            .pow(2)
+            .mul(-2.0)
+            .exp_()
+        )
+
+        res = (expBess0 - exp) / (expBess0 - 1)
+
+        if diag:
+            res = res.squeeze(0)
+        return res

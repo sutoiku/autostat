@@ -1,13 +1,17 @@
-from typing import NamedTuple
 import typing as ty
 import numpy as np
 from .dataset_adapters import Dataset
 
 from .kernel_specs import (
+    AdditiveKernelSpec,
+    KernelSpec,
+    BaseKernelSpec,
     GenericKernelSpec,
     PeriodicKernelSpec,
     PeriodicNoConstKernelSpec,
     ConstraintBounds as CB,
+    ProductKernelSpec,
+    TopLevelKernelSpec,
 )
 
 
@@ -66,3 +70,38 @@ def update_kernel_protos_constrained_with_data(
     kernels: list[GenericKernelSpec], d: Dataset, heuristics=None
 ) -> list[GenericKernelSpec]:
     return [kernel_proto_constrained_with_data(k, d, heuristics) for k in kernels]
+
+
+T = ty.TypeVar("T")
+
+
+def set_constraints_on_spec(
+    spec: T, constrained_base_kernels: list[BaseKernelSpec]
+) -> T:
+    CBK = constrained_base_kernels
+    if (
+        isinstance(spec, TopLevelKernelSpec)
+        or isinstance(spec, AdditiveKernelSpec)
+        or isinstance(spec, ProductKernelSpec)
+    ):
+        operands = [set_constraints_on_spec(subspec, CBK) for subspec in spec.operands]
+        return spec.clone_update({"operands": operands})
+    else:
+        base_kernel = list(filter(lambda x: type(x) == type(spec), CBK))[0]
+
+        if isinstance(spec, PeriodicNoConstKernelSpec) or isinstance(
+            spec, PeriodicKernelSpec
+        ):
+            # FIXME: type handling here sucks
+            base_kernel = ty.cast(
+                PeriodicKernelSpec,
+                base_kernel,
+            )
+            return spec.clone_update(
+                {
+                    "period_bounds": base_kernel.period_bounds,
+                    "length_scale_bounds": base_kernel.length_scale_bounds,
+                }
+            )
+        else:
+            return spec

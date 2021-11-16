@@ -1,9 +1,10 @@
-from .dataset_adapters import Dataset
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field, replace, asdict
 import typing as ty
 
-from .constraints import update_kernel_protos_constrained_with_data
+from enum import Enum, auto
 
+from .constraints import update_kernel_protos_constrained_with_data
+from .dataset_adapters import Dataset
 
 import inspect
 import autostat.kernel_specs as ks
@@ -71,6 +72,17 @@ def kernel_protos_from_names(base_kernel_shortnames: list[str]):
 ####
 
 
+class Backend(Enum):
+    SKLEARN = auto()
+    GPYTORCH = auto()
+
+    def __str__(self) -> str:
+        return "SKLEARN" if self is Backend.SKLEARN else "GPYTORCH"
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+
 @dataclass(frozen=True)
 class RunSettings:
     initial_kernels: list[TopLevelKernelSpec] = field(
@@ -86,17 +98,44 @@ class RunSettings:
     log_level: None = None
     max_search_depth: int = 5
 
+    backend: Backend = Backend.SKLEARN
+
+    use_parallel: bool = False
+    use_gpu: bool = False
+    num_cpus: int = 12
+    num_gpus: int = 1
+    gpu_max_simultaneous: int = 2
+    gpu_memory_share_needed: float = 0.4
+
+    get_prediction_likelihoods: bool = True
+
+    seed: int = 0
+
+    sklean_n_restarts_optimizer: int = 0
+
     def replace_base_kernels_by_names(self, names: list[str]) -> "RunSettings":
         return replace(self, base_kernel_prototypes=kernel_protos_from_names(names))
 
-    def replace_init_kernel_proto_constraints_using_dataset(
+    def replace_kernel_proto_constraints_using_dataset(
         self, dataset: Dataset
     ) -> "RunSettings":
         initial_kernels = update_kernel_protos_constrained_with_data(
             self.base_kernel_prototypes, dataset
         )
+
+        base_kernel_prototypes = update_kernel_protos_constrained_with_data(
+            self.base_kernel_prototypes, dataset
+        )
+
         initial_kernels = [
             TopLevelKernelSpec.from_base_kernel(k) for k in initial_kernels
         ]
 
-        return replace(self, initial_kernels=initial_kernels)
+        return replace(
+            self,
+            initial_kernels=initial_kernels,
+            base_kernel_prototypes=base_kernel_prototypes,
+        )
+
+    def asdict(self):
+        return asdict(self)

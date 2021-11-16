@@ -57,14 +57,15 @@ def scale_split_cuda(X, Y, split=0.2):
 
 
 def load_mauna_torch():
-    X_raw, Y_raw = load_mauna_loa_atmospheric_co2()
-    train_x, test_x, train_y, test_y = scale_split_cuda(X_raw, Y_raw)
+    with torch.no_grad():
+        X_raw, Y_raw = load_mauna_loa_atmospheric_co2()
+        train_x, test_x, train_y, test_y = scale_split_cuda(X_raw, Y_raw)
 
-    f, ax = plt.subplots(1, 1, figsize=(14, 4))
-    ax.plot(train_x.cpu().numpy(), train_y.cpu().numpy())
-    ax.plot(test_x.cpu().numpy(), test_y.cpu().numpy())
+        f, ax = plt.subplots(1, 1, figsize=(14, 4))
+        ax.plot(train_x.cpu().numpy(), train_y.cpu().numpy())
+        ax.plot(test_x.cpu().numpy(), test_y.cpu().numpy())
 
-    return train_x, test_x, train_y, test_y
+        return train_x, test_x, train_y, test_y
 
 
 def end_block_split(X, split):

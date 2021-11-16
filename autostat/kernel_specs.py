@@ -58,6 +58,7 @@ class KernelSpec:
         self: GenericKernelSpec, kwargs: dict[str, ty.Any] = {}
     ) -> GenericKernelSpec:
         for k, v in kwargs.items():
+            # FIXME: using "_bounds" like this is terrible
             bounds_key = k + "_bounds"
             if hasattr(self, bounds_key):
                 bounds = ty.cast(ConstraintBounds, getattr(self, bounds_key))

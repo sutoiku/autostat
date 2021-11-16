@@ -66,7 +66,12 @@ def build_kernel(kernel_spec: KernelSpec) -> Kernel:
 
     elif isinstance(kernel_spec, PeriodicNoConstKernelSpec):
 
-        raise NotImplementedError()
+        inner = PeriodicKernelNoConstant(
+            lengthscale_constraint=bounds_to_interval(kernel_spec.length_scale_bounds),
+            period_length_constraint=bounds_to_interval(kernel_spec.period_bounds),
+        )
+        inner.period_length = kernel_spec.period
+        inner.lengthscale = kernel_spec.length_scale
 
     elif isinstance(kernel_spec, PeriodicKernelSpec):
 

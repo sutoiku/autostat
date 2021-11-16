@@ -58,10 +58,10 @@ def to_kernel_spec_inner(kernel: Kernel) -> KernelSpec:
             length_scale=lengthscale, period=kernel.period_length.item()
         )
 
-    # elif isinstance(kernel, PeriodicKernelNoConstant):
-    #     inner = PeriodicNoConstKernelSpec(
-    #         length_scale=lengthscale, period=kernel.period_length
-    #     )
+    elif isinstance(kernel, PeriodicKernelNoConstant):
+        inner = PeriodicNoConstKernelSpec(
+            length_scale=lengthscale, period=kernel.period_length.item()
+        )
 
     elif isinstance(kernel, RQKernel):
         inner = RQKernelSpec(length_scale=lengthscale, alpha=kernel.alpha.item())

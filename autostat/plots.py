@@ -12,31 +12,29 @@ def plot_observations(X, Y, ax):
     ax.plot(X.flatten(), Y.flatten(), "k.", markersize=1)
 
 
-def plot_predictions(pred_x, pred_mean_y, lower_y, upper_y, ax):
+def plot_predictions(pred_x, pred_mean_y, y_std, ax):
     # Plot predictive means as blue line
     ax.plot(pred_x.flatten(), pred_mean_y.flatten(), "r")
     # Shade between the lower and upper confidence bounds
     ax.fill_between(
         pred_x.flatten(),
-        lower_y.flatten(),
-        upper_y.flatten(),
+        pred_mean_y - 2 * y_std,
+        pred_mean_y + 2 * y_std,
         alpha=0.5,
     )
 
 
 def plot_model(model: AutoGpModel, data: Dataset):
-    train_x, train_y, test_x, test_y = data
-
     fig, ax = plt.subplots(1, 1, figsize=(14, 3))
-    plot_observations(train_x, train_y, ax)
-    plot_observations(test_x, test_y, ax)
+    plot_observations(data.train_x, data.train_y, ax)
+    plot_observations(data.test_x, data.test_y, ax)
 
-    y, l, u = model.predict(data.train_x)
+    y, y_std = model.predict_train()
 
-    plot_predictions(data.train_x, y, l, u, ax)
+    plot_predictions(data.train_x, y, y_std, ax)
 
-    y, l, u = model.predict(data.test_x)
-    plot_predictions(data.test_x, y, l, u, ax)
+    y, y_std = model.predict_test()
+    plot_predictions(data.test_x, y, y_std, ax)
 
     return fig, ax
 

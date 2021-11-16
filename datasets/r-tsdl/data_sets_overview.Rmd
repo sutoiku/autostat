@@ -1,0 +1,32 @@
+---
+title: "tsdl time series datasets"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tsdl)
+
+```
+
+```{r cars, echo=FALSE}
+
+#for (ts in head(tsdl,5)) {
+for (ts in tsdl) {
+  cat(paste(attributes(ts)), sep=";    ")
+  cat("\n")
+  cat("data set length:  ")
+  cat(length(ts))
+  cat("\n")
+  # tryCatch({
+  #   plot(ts)
+  # },
+  # error=function(){
+  #   cat("plot failed")
+  #   cat("\n")
+  # })
+  try(plot(ts))
+}
+
+
+```
