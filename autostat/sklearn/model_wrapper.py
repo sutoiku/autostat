@@ -35,7 +35,10 @@ class SklearnGPModel:
         kernel = build_kernel(kernel_spec)
 
         self.gp = GaussianProcessRegressor(
-            kernel=kernel, alpha=alpha, normalize_y=False, n_restarts_optimizer=3
+            kernel=kernel,
+            alpha=alpha,
+            normalize_y=False,
+            n_restarts_optimizer=run_settings.sklean_n_restarts_optimizer,
         )
         self.training_predictions: ty.Union[ModelPredictions, None] = None
         self.test_predictions: ty.Union[ModelPredictions, None] = None

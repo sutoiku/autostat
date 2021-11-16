@@ -1,18 +1,22 @@
 from autostat.run_settings import RunSettings, Backend
 
 
-from autostat.kernel_search import kernel_search
+from autostat.kernel_search import kernel_search, get_best_kernel_info
 
 from autostat.dataset_adapters import Dataset
 from autostat.utils.test_data_loader import load_test_dataset
 
 from html_reports import Report
+from markdown import markdown
 import matplotlib.pyplot as plt
 
 from datetime import datetime
 
 import os
 import time
+
+import random
+import numpy as np
 
 print(os.getcwd())
 
@@ -26,7 +30,7 @@ def timestamp():
 
 
 class HtmlLogger:
-    def __init__(self, report) -> None:
+    def __init__(self, report: Report) -> None:
         self.report = report
 
     def print(self, s: str) -> None:
@@ -34,6 +38,10 @@ class HtmlLogger:
             s.replace("\n", "\n\n")
             # .replace("<", "&lt;").replace(">", "&gt;")
         )
+
+    def prepend(self, s: str) -> None:
+        md = markdown(s, extensions=["fenced_code", "codehilite"])
+        self.report.body = [md] + self.report.body
 
     def show(self, fig) -> None:
         plt.tight_layout(rect=(0, 0, 1, 0.95))
@@ -61,21 +69,24 @@ files_sorted_by_num_data_points = [
     # "08-radio.mat",
     "04-wheat.mat",
     # "02-solar.mat",
-    "11-unemployment.mat",
-    # "10-sulphuric.mat",
-    # "09-gas-production.mat",
-    "03-mauna.mat",
-    # "13-wages.mat",
-    # "06-internet.mat",
-    "05-temperature.mat",
-    "12-births.mat",
+    # "11-unemployment.mat",
+    # # "10-sulphuric.mat",
+    # # "09-gas-production.mat",
+    # "03-mauna.mat",
+    # # "13-wages.mat",
+    # # "06-internet.mat",
+    # "05-temperature.mat",
+    # "12-births.mat",
 ]
 
 if __name__ == "__main__":
+
+    random.seed(1234)
+    np.random.seed(1234)
     print("starting report")
 
     run_settings = RunSettings(
-        max_search_depth=3,
+        max_search_depth=2,
         expand_kernel_specs_as_sums=False,
         num_cpus=12,
         use_gpu=False,
@@ -87,6 +98,8 @@ if __name__ == "__main__":
     logger.print(str(run_settings))
 
     logger.print("\n" + str(run_settings.asdict()))
+
+    prediction_scores = []
 
     for file_name in files_sorted_by_num_data_points:
         file_num = int(file_name[:2])
@@ -101,7 +114,15 @@ if __name__ == "__main__":
         tic = time.perf_counter()
         kernel_scores = kernel_search(dataset, run_settings=run_settings, logger=logger)
         toc = time.perf_counter()
+        best_kernel_info = get_best_kernel_info(kernel_scores)
+        prediction_scores.append(best_kernel_info.prediction_score)
+
+        logger.print(f"best_kernel_info {str(best_kernel_info)}")
+
         logger.print(f"Total time for {file_name}: {toc-tic:.3f} s")
+
+    logger.prepend(f"prediction_scores: {str(prediction_scores)}")
+    logger.prepend(f"sum prediction_scores: {str(sum(prediction_scores))}")
 
     report.write_report(filename=f"reports/report_{timestamp()}.html")
     print("report done")

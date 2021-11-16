@@ -19,7 +19,9 @@ An implementation of the Automatic Statistician algorithm
     - kernel scoring function (alternative to BIC?)
     - data rescaling parameters
     - noise component inflation
+    - (keeping x% of data as test) Fit GPs using y% of data, then CV on (100-x-y)%, optimizing noise component to get best score. Model with best score given noise optimized on CV data is passed to next round
   - NEED OUT OF SAMPLE PREDICTION QUALITY MEASUREMENT
+    - OVERALL quality comparison score that considers overall performance on all datasets
 
 - Change scaling / standardization method to avoid super small parameter values that lead to numerical instability for PERnc, possibly other kernels? When everything is scaled into [-1, 1], data points can end up very close to each other, which can cause numerical issues especially with PERnc
 

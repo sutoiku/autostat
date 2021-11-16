@@ -161,17 +161,16 @@ class GpytorchGPModel(AutoGpModel):
                 self.likelihood(self.model(x_torch)),
             )
 
-            lower, upper = observed_pred.confidence_region()
+            _, upper = observed_pred.confidence_region()
+            y = observed_pred.mean.cpu().numpy()
+            upper = upper.cpu().numpy()
+            y_std = (upper - y) / 2
 
-            return ModelPredictions(
-                observed_pred.mean.cpu().numpy(),
-                lower.cpu().numpy(),
-                upper.cpu().numpy(),
-            )
+            return ModelPredictions(y, y_std)
 
     def residuals(self) -> NDArray[np.float_]:
         with torch.no_grad(), gp.settings.fast_pred_var():
-            yHat, _, _ = self.predict(self.data.train_x)
+            yHat, _ = self.predict_train()
             yHat = yHat.flatten()
             train_y = self.data.train_y.flatten()
             residuals = train_y - yHat

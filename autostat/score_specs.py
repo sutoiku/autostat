@@ -6,6 +6,7 @@ from autostat.decomposition import decompose_spec
 import time
 import typing as ty
 import numpy as np
+import random
 import os
 
 from .auto_gp_model import AutoGpModel
@@ -50,6 +51,8 @@ def score_kernel_spec(
     args: ScoreKernelSpecArgs,
 ) -> tuple[ty.Union[ScoredKernelInfo, None], SerializedLogQueue]:
     (kernel_spec, data, model_class, run_settings, logger) = args
+    random.seed(run_settings.seed)
+    np.random.seed(run_settings.seed)
 
     # try:
     tic = time.perf_counter()

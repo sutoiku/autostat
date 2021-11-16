@@ -109,6 +109,10 @@ class RunSettings:
 
     get_prediction_likelihoods: bool = True
 
+    seed: int = 0
+
+    sklean_n_restarts_optimizer: int = 0
+
     def replace_base_kernels_by_names(self, names: list[str]) -> "RunSettings":
         return replace(self, base_kernel_prototypes=kernel_protos_from_names(names))
 
