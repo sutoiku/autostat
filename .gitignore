@@ -2,6 +2,7 @@
 .scratch
 
 integration-test-reports/reports
+hyperparameter_tuning/reports
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
