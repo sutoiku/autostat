@@ -93,7 +93,7 @@ class RunSettings:
     )
     kernel_priors: None = None
 
-    expand_kernel_specs_as_sums: bool = False
+    expand_kernel_specs_as_sums: bool = True
 
     log_level: None = None
     max_search_depth: int = 5
@@ -102,7 +102,7 @@ class RunSettings:
 
     use_parallel: bool = False
     use_gpu: bool = False
-    num_cpus: int = 12
+    num_cpus: int = 1
     num_gpus: int = 1
     gpu_max_simultaneous: int = 2
     gpu_memory_share_needed: float = 0.4
@@ -139,3 +139,6 @@ class RunSettings:
 
     def asdict(self):
         return asdict(self)
+
+    def replace_with_kwargs(self, kwargs):
+        return replace(self, **kwargs)

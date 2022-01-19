@@ -6,7 +6,7 @@ import numpy as np
 
 from .auto_gp_model import AutoGpModel
 from .kernel_specs import TopLevelKernelSpec
-from .dataset_adapters import Dataset
+from .dataset_adapters import Dataset, ModelPredictions
 from .utils.logger import JupyterLogger, Logger, SerializedLogQueue
 from .kernel_swaps import top_level_spec_swaps
 from .run_settings import RunSettings, Backend
@@ -33,10 +33,19 @@ def get_best_kernel_name_and_info(
     )
 
 
+# def get_best_kernel_info(
+#     kernel_scores: KernelScores,
+# ) -> ScoredKernelInfo:
+#     return min(kernel_scores.values(), key=lambda name_score_info: name_score_info.bic)
+
+
 def get_best_kernel_info(
     kernel_scores: KernelScores,
 ) -> ScoredKernelInfo:
-    return min(kernel_scores.values(), key=lambda name_score_info: name_score_info.bic)
+    return max(
+        kernel_scores.values(),
+        key=lambda name_score_info: name_score_info.log_likelihood_test,
+    )
 
 
 def kernel_search(
@@ -50,9 +59,9 @@ def kernel_search(
     logger = logger or JupyterLogger()
     best_model = None
 
-    # FIXME move to general init? or perhaps this IS the actual init...
-    if run_settings.use_parallel:
-        ray.init(num_cpus=run_settings.num_cpus, ignore_reinit_error=True)
+    # # FIXME move to general init? or perhaps this IS the actual init...
+    # if run_settings.use_parallel:
+    #     ray.init(num_cpus=run_settings.num_cpus, ignore_reinit_error=True)
     if run_settings.backend == Backend.GPYTORCH:
         model_class = GpytorchGPModel
     else:
@@ -128,7 +137,7 @@ def find_best_kernel_and_predict(
     data: Dataset,
     run_settings: RunSettings,
     kernel_scores: KernelScores = None,
-) -> tuple[np.ndarray, np.ndarray]:
+) -> ModelPredictions:
     kernel_scores = kernel_search(
         data, run_settings=run_settings, kernel_scores=kernel_scores
     )

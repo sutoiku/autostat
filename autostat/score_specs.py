@@ -34,7 +34,7 @@ class ScoredKernelInfo(ty.NamedTuple):
     model: AutoGpModel
     bic: float
     log_likelihood: float
-    prediction_score: ty.Union[float, None] = None
+    log_likelihood_test: float
 
     # def clear_model
 
