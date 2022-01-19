@@ -29,11 +29,11 @@ def plot_model(model: AutoGpModel, data: Dataset):
     plot_observations(data.train_x, data.train_y, ax)
     plot_observations(data.test_x, data.test_y, ax)
 
-    y, y_std = model.predict_train()
+    y, y_std, _ = model.predict_train()
 
     plot_predictions(data.train_x, y, y_std, ax)
 
-    y, y_std = model.predict_test()
+    y, y_std, _ = model.predict_test()
     plot_predictions(data.test_x, y, y_std, ax)
 
     return fig, ax

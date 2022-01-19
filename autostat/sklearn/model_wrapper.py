@@ -75,16 +75,17 @@ class SklearnGPModel:
             return self.test_predictions
 
     def _predict(self, x: ArrayLike) -> ModelPredictions:
-        y_pred, y_std = ty.cast(
+        y_pred, cov = ty.cast(
             tuple[NDArray[np.float_], NDArray[np.float_]],
-            self.gp.predict(x, return_std=True),
+            self.gp.predict(x, return_std=False, return_cov=True),
         )
         y_pred = y_pred.flatten()
-        y_std = y_std.flatten()
-        return ModelPredictions(y_pred, y_std)
+        y_std = np.sqrt(np.diag(cov)).flatten()
+
+        return ModelPredictions(y_pred, y_std, cov)
 
     def residuals(self) -> NDArray[np.float_]:
-        yHat, _ = self.predict_train()
+        yHat, _, _ = self.predict_train()
         yHat = yHat.flatten()
         train_y = self.data.train_y.flatten()
         residuals = train_y - yHat
@@ -96,20 +97,20 @@ class SklearnGPModel:
     def to_spec(self) -> TopLevelKernelSpec:
         return to_kernel_spec(ty.cast(Sum, self.gp.kernel_))
 
-    def prediction_log_prob_score(self) -> float:
-        # NOTE: we don't need the covariance for this score b/c we're only
-        # concerned about the epsilon between the predicted latent function y_pred
-        # and the observation y_test. Under the assumption that we have noisy observations--
-        # y_test = y_pred + ε , with ε ~ N(0, σ^2 * I)
-        #  -- then the prob of seeing a collection of epsilons
-        # ε = y_test - y_pred
-        # does not depend on the covariance structure of the kernel matrix
-        y_pred, y_std = self.predict_test()
+    def log_likelihood_test(self) -> float:
+        y_pred, _, cov = self.predict_test()
         y_test = self.data.test_y
-        z_score_sqr = ((y_pred - y_test) / y_std) ** 2
+
+        Y = y_pred.reshape((-1, 1)) - y_test.reshape((-1, 1))
         N = len(y_pred)
 
-        log_prob_score = -0.5 * N * np.log(2 * np.pi) - np.sum(
-            0.5 * z_score_sqr + np.log(y_std)
+        L = np.linalg.cholesky(cov)
+        L_inv = np.linalg.inv(np.linalg.cholesky(cov))
+        Sigma_inv = L_inv.T @ L_inv
+        _, log_det_L = np.linalg.slogdet(L)
+        log_det_K = 2 * log_det_L
+
+        log_prob_score = (
+            -0.5 * (Y.T @ Sigma_inv @ Y + log_det_K + N * np.log(2 * np.pi)).item()
         )
         return log_prob_score

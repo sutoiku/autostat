@@ -67,8 +67,7 @@ def score_kernel_spec(
 
     fig, ax = plot_model(model, data)
 
-    prediction_log_likelihood = model.prediction_log_prob_score()
-    # prediction_log_likelihood = 2.1
+    prediction_log_likelihood = model.log_likelihood_test()
 
     fitted_spec = model.to_spec()
 

@@ -46,5 +46,5 @@ class AutoGpModel(Protocol):
     def log_likelihood(self) -> float:
         ...
 
-    def prediction_log_prob_score(self) -> float:
+    def log_likelihood_test(self) -> float:
         ...
