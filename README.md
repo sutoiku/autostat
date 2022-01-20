@@ -1,14 +1,45 @@
 # Autostat
 
-An implementation of the Automatic Bayesian Covariance Discovery algorithm (part of the "Automatic Statistician" research program).
+An implementation of the Automatic Bayesian Covariance Discovery algorithm (part of the "Automatic Statistician" research program), with a handful of adjustments made to focus on
 
 # How to use
+
+```python
+import autostat
+from autostat.test_data.test_data_loader import load_matlab_test_data_by_file_num
+
+# `file_num=2` loads the famous Mauna Loa CO2 data set
+x,y = load_matlab_test_data_by_file_num(file_num=2)
+
+abcd_model = autostat.ABCDModel(autostat.KernelSearchSettings(max_search_depth =5, num_cpus=8))
+
+abcd_model.fit(x,y)
+
+autostat.plot.plot_decomposition(abcd_model)
+
+
+```
 
 ## API
 
 # Development notes, to-dos, next steps, and open questions
 
-- This implementation
+## Development notes
+
+- This implementation exposes a scikit-learn style OO API, but internally we make heavy use of `frozen` DataClasses, and have tried to adopt an immutable + functional style whenever possible.
+- Though it somewhat goes against the flow of Python's usual duck-typing approach, this project makes extensive use of types a "multiple dispatch" style to achieve polymorphism.
+  - Note that the `multipledispatch` module and other similar approaches to function overloading were not adopted because as of late 2021 they were not well supported by `typing` and/or Pylance, which is critical for developer productivity when using this style. The temporary solution was to use `if...elif...` blocks with `isinstance`, but the plan is to replace this with pattern matching blocks once Python 3.10 is more widely adopted.
+
+## Algorithm notes and tricks:
+
+- This implementation uses a slightly different tree search procedure than that described in the original ABCD paper. In particular, rather than choosing the best performing model at each depth based on the BIC of that model when fitted on all available data, we hold out a sample of test data at the end of the time series, and we choose the model under which the test data has the highest posterior log probability. We do this for the following reasons:
+
+  - In the original ABCD paper, overfitting is avoided by penalizing model complexity using a BIC score. Rather than use that approach, we choose to avoid overfitting by way of an empirical cross-validation-like method. Though this may appear a bit out of place in a largely Bayesian method, we note that the BIC also seems to have been originally chosen as a matter of expedience (see e.g. https://dl.acm.org/doi/10.5555/3157382.3157422 for an approach that uses a more fully Bayesian method of selecting compositional models).
+  - For this application for which this implementation was written, the quality of the decomposition of the signal throughout the dataset is important, but forecast plausibility is at least as important if not moreso. Thus it's important to somehow attach more weight to the observations at the end of the series. An analytic weighting scheme could be used, but the empirical CV-like approach is simple and produces satisfactory results.
+  - Note that once the best model structure is chosen, the final model is refit using all available data.
+
+- To find a suitable initialization for newly introduce period kernel components at search depth _n+1_, we run an FFT over the residuals of the upstream model at depth _n_ and extract the frequency with the largest weight. This typical results in better fits and convergence.
+  - Note also that adding random initializations can degrade performance badly for PER. I'm not sure exactly what is going on, but somehow the model is finding _numerically better_ optima when it deviates from the residual-based starting point, however the fits are much less convincing visually.
 
 ## Open questions and problems
 
@@ -91,13 +122,3 @@ An implementation of the Automatic Bayesian Covariance Discovery algorithm (part
 
 - block matrix inversion:
   - http://www.math.chalmers.se/~rootzen/highdimensional/blockmatrixinverse.pdf
-
-### Algorithm notes and tricks:
-
-- This implementation does not use the same tree search procedure described in the original ABCD paper. In particular, rather than choosing the best performing model at each depth based on the BIC of that model when fitted on available data, we hold out a sample of test data at the end of the time series, and we choose the model under which the test data has the highest posterior log probability. We do this for the following reasons:
-
-  - In the original ABCD paper, overfitting is avoided by penalizing model complexity using a BIC score. Rather than use that approach, we choose to avoid overfitting by way of an empirical cross-validation-like method. Though this may appear a bit out of place in a largely Bayesian method, we note that the BIC also seems to have been originally chosen as a matter of expedience (see e.g. https://dl.acm.org/doi/10.5555/3157382.3157422 for an approach that uses a more fully Bayesian method of selecting compositional models).
-  - For this application for which this implementation was written, the quality of the decomposition of the signal throughout the dataset is important, but forecast plausibility is at least as important if not moreso. Thus it's important to somehow attach more weight to the observations at the end of the series. An analytic weighting scheme could be used, but the empirical CV-like approach is simple and produces satisfactory results.
-
-- To find a suitable initialization for newly introduce period kernel components at search depth _n+1_, we run an FFT over the residuals of the upstream model at depth _n_ and extract the frequency with the largest weight. This typical results in better fits and convergence.
-  - Note also that adding random initializations can degrade performance badly for PER. I'm not sure exactly what is going on, but somehow the model is finding _numerically better_ optima when it deviates from the residual-based starting point, however the fits are much less convincing visually.
