@@ -1,10 +1,9 @@
 from autostat.run_settings import RunSettings, Backend
 
-
 from autostat.kernel_search import kernel_search, get_best_kernel_info
-
 from autostat.dataset_adapters import Dataset
-from autostat.utils.test_data_loader import load_test_dataset
+from autostat.utils.data_prep import scale_split
+from autostat.test_data.test_data_loader import load_matlab_test_data_by_file_num
 
 from html_reports import Report
 from markdown import markdown
@@ -72,11 +71,11 @@ files_sorted_by_num_data_points = [
     # "11-unemployment.mat",
     # # "10-sulphuric.mat",
     # # "09-gas-production.mat",
-    # "03-mauna.mat",
+    "03-mauna.mat",
     # # "13-wages.mat",
     # # "06-internet.mat",
     # "05-temperature.mat",
-    # "12-births.mat",
+    "12-births.mat",
 ]
 
 if __name__ == "__main__":
@@ -86,7 +85,7 @@ if __name__ == "__main__":
     print("starting report")
 
     run_settings = RunSettings(
-        max_search_depth=2,
+        max_search_depth=5,
         expand_kernel_specs_as_sums=False,
         num_cpus=12,
         use_gpu=False,
@@ -104,7 +103,8 @@ if __name__ == "__main__":
     for file_name in files_sorted_by_num_data_points:
         file_num = int(file_name[:2])
 
-        dataset = load_test_dataset(matlab_data_path, file_num, split=0.1)
+        x, y = load_matlab_test_data_by_file_num(file_num)
+        dataset = Dataset(*scale_split(x, y, split=0.1))
 
         run_settings = run_settings.replace_kernel_proto_constraints_using_dataset(
             dataset
@@ -115,7 +115,7 @@ if __name__ == "__main__":
         kernel_scores = kernel_search(dataset, run_settings=run_settings, logger=logger)
         toc = time.perf_counter()
         best_kernel_info = get_best_kernel_info(kernel_scores)
-        prediction_scores.append(best_kernel_info.prediction_score)
+        prediction_scores.append(best_kernel_info.log_likelihood_test)
 
         logger.print(f"best_kernel_info {str(best_kernel_info)}")
 
