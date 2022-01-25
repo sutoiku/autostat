@@ -9,7 +9,7 @@ import numpy as np
 import random
 import os
 
-from .auto_gp_model import AutoGpModel
+from .auto_gp_model import CompositionalGPModel
 from .kernel_specs import TopLevelKernelSpec
 from .dataset_adapters import Dataset
 from .utils.logger import JupyterLogger, Logger, SerializedLogQueue
@@ -22,7 +22,7 @@ from .plots import plot_decomposition, plot_model
 class ScoreKernelSpecArgs(ty.NamedTuple):
     kernel_spec: TopLevelKernelSpec
     data: Dataset
-    model_class: type[AutoGpModel]
+    model_class: type[CompositionalGPModel]
     run_settings: RunSettings
     logger: SerializedLogQueue
 
@@ -31,7 +31,7 @@ class ScoredKernelInfo(ty.NamedTuple):
     name: str
     spec_pre_fit: TopLevelKernelSpec
     spec_fitted: TopLevelKernelSpec
-    model: AutoGpModel
+    model: CompositionalGPModel
     bic: float
     log_likelihood: float
     log_likelihood_test: float
@@ -109,7 +109,7 @@ bic: {bic:.2f}, M: {num_params}, log likelihood: {log_likelihood:.3f}, pred. sco
 def score_kernel_specs(
     specs: list[TopLevelKernelSpec],
     data: Dataset,
-    model_class: type[AutoGpModel],
+    model_class: type[CompositionalGPModel],
     kernel_scores: KernelScores,
     run_settings: RunSettings,
     logger: Logger = None,

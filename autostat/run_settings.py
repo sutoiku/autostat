@@ -91,11 +91,9 @@ class RunSettings:
     base_kernel_prototypes: list[BaseKernelSpec] = field(
         default_factory=default_kernels_prototypes
     )
-    kernel_priors: None = None
 
     expand_kernel_specs_as_sums: bool = True
 
-    log_level: None = None
     max_search_depth: int = 5
 
     backend: Backend = Backend.SKLEARN

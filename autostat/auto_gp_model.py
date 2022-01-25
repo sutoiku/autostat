@@ -8,7 +8,7 @@ from .dataset_adapters import Dataset, ModelPredictions
 from .run_settings import RunSettings
 
 
-class AutoGpModel(Protocol):
+class CompositionalGPModel(Protocol):
     data: Dataset
 
     def __init__(

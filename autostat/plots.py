@@ -3,7 +3,7 @@ import numpy as np
 from numpy.typing import NDArray
 import typing as ty
 
-from .auto_gp_model import AutoGpModel
+from .auto_gp_model import CompositionalGPModel
 from .dataset_adapters import Dataset
 from .decomposition import DecompositionData
 
@@ -24,7 +24,7 @@ def plot_predictions(pred_x, pred_mean_y, y_std, ax):
     )
 
 
-def plot_model(model: AutoGpModel, data: Dataset):
+def plot_model(model: CompositionalGPModel, data: Dataset):
     fig, ax = plt.subplots(1, 1, figsize=(14, 3))
     plot_observations(data.train_x, data.train_y, ax)
     plot_observations(data.test_x, data.test_y, ax)

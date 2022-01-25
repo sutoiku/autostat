@@ -20,7 +20,7 @@ from .kernel_builder import build_kernel
 from ..math import calc_bic
 
 
-class SklearnGPModel:
+class SklearnCompositionalGPModel:
     def __init__(
         self,
         kernel_spec: KernelSpec,

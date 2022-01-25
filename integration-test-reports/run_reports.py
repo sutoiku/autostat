@@ -73,7 +73,7 @@ files_sorted_by_num_data_points = [
     # # "09-gas-production.mat",
     "03-mauna.mat",
     # # "13-wages.mat",
-    # # "06-internet.mat",
+    # "06-internet.mat",
     # "05-temperature.mat",
     "12-births.mat",
 ]
@@ -85,7 +85,7 @@ if __name__ == "__main__":
     print("starting report")
 
     run_settings = RunSettings(
-        max_search_depth=5,
+        max_search_depth=4,
         expand_kernel_specs_as_sums=False,
         num_cpus=12,
         use_gpu=False,

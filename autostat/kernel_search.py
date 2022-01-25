@@ -4,7 +4,7 @@ from typing import NamedTuple, cast
 import ray
 import numpy as np
 
-from .auto_gp_model import AutoGpModel
+from .auto_gp_model import CompositionalGPModel
 from .kernel_specs import TopLevelKernelSpec
 from .dataset_adapters import Dataset, ModelPredictions
 from .utils.logger import JupyterLogger, Logger, SerializedLogQueue
@@ -21,8 +21,8 @@ from .score_specs import (
 from .constraints import set_constraints_on_spec
 
 
-from autostat.sklearn.model_wrapper import SklearnGPModel
-from autostat.gpytorch.model_wrapper import GpytorchGPModel
+from autostat.sklearn.model_wrapper import SklearnCompositionalGPModel
+from autostat.gpytorch.model_wrapper import GpytorchCompositionalGPModel
 
 
 def get_best_kernel_name_and_info(
@@ -63,9 +63,9 @@ def kernel_search(
     # if run_settings.use_parallel:
     #     ray.init(num_cpus=run_settings.num_cpus, ignore_reinit_error=True)
     if run_settings.backend == Backend.GPYTORCH:
-        model_class = GpytorchGPModel
+        model_class = GpytorchCompositionalGPModel
     else:
-        model_class = SklearnGPModel
+        model_class = SklearnCompositionalGPModel
 
     logger.print(str(run_settings.initial_kernels))
 
@@ -143,5 +143,5 @@ def find_best_kernel_and_predict(
     )
     best_kernel_info = get_best_kernel_info(kernel_scores)
 
-    best_model = cast(AutoGpModel, best_kernel_info.model)
+    best_model = cast(CompositionalGPModel, best_kernel_info.model)
     return best_model.predict_test()

@@ -18,7 +18,7 @@ from ..run_settings import RunSettings
 from ..dataset_adapters import Dataset, ModelPredictions
 from .kernel_builder import build_kernel
 from ..math import calc_bic
-from ..auto_gp_model import AutoGpModel
+from ..auto_gp_model import CompositionalGPModel
 
 torch.set_default_dtype(torch.float64)
 
@@ -42,7 +42,7 @@ class ExactGPModel(gp.models.ExactGP):
         return gp.distributions.MultivariateNormal(mean_x, covar_x)
 
 
-class GpytorchGPModel(AutoGpModel):
+class GpytorchCompositionalGPModel(CompositionalGPModel):
     def __init__(
         self,
         kernel_spec: TopLevelKernelSpec,
