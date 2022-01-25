@@ -14,7 +14,7 @@ from ..kernel_specs import (
     TopLevelKernelSpec,
     KernelSpec,
 )
-from ..run_settings import RunSettings
+from ..run_settings import KernelSearchSettings
 from ..dataset_adapters import Dataset, ModelPredictions
 from .kernel_builder import build_kernel
 from ..math import calc_bic
@@ -25,7 +25,7 @@ class SklearnCompositionalGPModel:
         self,
         kernel_spec: KernelSpec,
         data: Dataset,
-        run_settings: RunSettings,
+        run_settings: KernelSearchSettings,
         alpha=1e-7,
     ) -> None:
         self.kernel_spec = kernel_spec

@@ -5,7 +5,7 @@ from typing import Protocol
 
 from .kernel_specs import KernelSpec, TopLevelKernelSpec
 from .dataset_adapters import Dataset, ModelPredictions
-from .run_settings import RunSettings
+from .run_settings import KernelSearchSettings
 
 
 class CompositionalGPModel(Protocol):
@@ -15,7 +15,7 @@ class CompositionalGPModel(Protocol):
         self,
         kernel_spec: KernelSpec,
         data: Dataset,
-        run_settings: RunSettings,
+        run_settings: KernelSearchSettings,
     ) -> None:
         ...
 

@@ -84,7 +84,7 @@ class Backend(Enum):
 
 
 @dataclass(frozen=True)
-class RunSettings:
+class KernelSearchSettings:
     initial_kernels: list[TopLevelKernelSpec] = field(
         default_factory=default_initial_kernels
     )
@@ -111,12 +111,12 @@ class RunSettings:
 
     sklean_n_restarts_optimizer: int = 0
 
-    def replace_base_kernels_by_names(self, names: list[str]) -> "RunSettings":
+    def replace_base_kernels_by_names(self, names: list[str]) -> "KernelSearchSettings":
         return replace(self, base_kernel_prototypes=kernel_protos_from_names(names))
 
     def replace_kernel_proto_constraints_using_dataset(
         self, dataset: Dataset
-    ) -> "RunSettings":
+    ) -> "KernelSearchSettings":
         initial_kernels = update_kernel_protos_constrained_with_data(
             self.base_kernel_prototypes, dataset
         )

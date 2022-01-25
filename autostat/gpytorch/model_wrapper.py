@@ -14,7 +14,7 @@ from .to_kernel_spec import to_kernel_spec
 from ..kernel_specs import (
     TopLevelKernelSpec,
 )
-from ..run_settings import RunSettings
+from ..run_settings import KernelSearchSettings
 from ..dataset_adapters import Dataset, ModelPredictions
 from .kernel_builder import build_kernel
 from ..math import calc_bic
@@ -47,7 +47,7 @@ class GpytorchCompositionalGPModel(CompositionalGPModel):
         self,
         kernel_spec: TopLevelKernelSpec,
         data: Dataset,
-        run_settings: RunSettings,
+        run_settings: KernelSearchSettings,
         use_cuda: bool = True,
     ) -> None:
         self.device = torch.device(

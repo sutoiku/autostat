@@ -1,4 +1,4 @@
-from autostat.run_settings import RunSettings, Backend
+from autostat.run_settings import KernelSearchSettings, Backend
 
 from autostat.kernel_search import kernel_search, get_best_kernel_info
 from autostat.dataset_adapters import Dataset
@@ -84,7 +84,7 @@ if __name__ == "__main__":
     np.random.seed(1234)
     print("starting report")
 
-    run_settings = RunSettings(
+    run_settings = KernelSearchSettings(
         max_search_depth=4,
         expand_kernel_specs_as_sums=False,
         num_cpus=12,

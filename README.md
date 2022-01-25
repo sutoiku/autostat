@@ -11,7 +11,7 @@ from autostat.test_data.test_data_loader import load_matlab_test_data_by_file_nu
 # `file_num=2` loads the famous Mauna Loa CO2 data set
 x,y = load_matlab_test_data_by_file_num(file_num=2)
 
-abcd_model = autostat.ABCDModel(autostat.KernelSearchSettings(max_search_depth =5, num_cpus=8))
+abcd_model = autostat.ABCDModel(autostat.KernelSearchSettings(max_search_depth = 5, num_cpus = 8))
 
 abcd_model.fit(x,y)
 

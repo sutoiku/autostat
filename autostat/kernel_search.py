@@ -9,7 +9,7 @@ from .kernel_specs import TopLevelKernelSpec
 from .dataset_adapters import Dataset, ModelPredictions
 from .utils.logger import JupyterLogger, Logger, SerializedLogQueue
 from .kernel_swaps import top_level_spec_swaps
-from .run_settings import RunSettings, Backend
+from .run_settings import KernelSearchSettings, Backend
 from .plots import plot_decomposition, plot_model
 from .expand_spec import expand_spec
 from .kernel_spec_initialization import intialize_base_kernel_prototypes_from_residuals
@@ -50,7 +50,7 @@ def get_best_kernel_info(
 
 def kernel_search(
     data: Dataset,
-    run_settings: RunSettings,
+    run_settings: KernelSearchSettings,
     kernel_scores: KernelScores = None,
     logger: Logger = None,
 ) -> KernelScores:
@@ -135,7 +135,7 @@ def kernel_search(
 
 def find_best_kernel_and_predict(
     data: Dataset,
-    run_settings: RunSettings,
+    run_settings: KernelSearchSettings,
     kernel_scores: KernelScores = None,
 ) -> ModelPredictions:
     kernel_scores = kernel_search(

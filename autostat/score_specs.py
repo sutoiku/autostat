@@ -13,7 +13,7 @@ from .auto_gp_model import CompositionalGPModel
 from .kernel_specs import TopLevelKernelSpec
 from .dataset_adapters import Dataset
 from .utils.logger import JupyterLogger, Logger, SerializedLogQueue
-from .run_settings import RunSettings
+from .run_settings import KernelSearchSettings
 from .plots import plot_decomposition, plot_model
 
 # from .kernel_search import ScoredKernelInfo, KernelScores
@@ -23,7 +23,7 @@ class ScoreKernelSpecArgs(ty.NamedTuple):
     kernel_spec: TopLevelKernelSpec
     data: Dataset
     model_class: type[CompositionalGPModel]
-    run_settings: RunSettings
+    run_settings: KernelSearchSettings
     logger: SerializedLogQueue
 
 
@@ -111,7 +111,7 @@ def score_kernel_specs(
     data: Dataset,
     model_class: type[CompositionalGPModel],
     kernel_scores: KernelScores,
-    run_settings: RunSettings,
+    run_settings: KernelSearchSettings,
     logger: Logger = None,
 ) -> KernelScores:
     logger = logger or JupyterLogger()
