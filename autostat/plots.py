@@ -3,7 +3,7 @@ import numpy as np
 from numpy.typing import NDArray
 import typing as ty
 
-from .auto_gp_model import CompositionalGPModel
+from .compositional_gp_model import CompositionalGPModel
 from .dataset_adapters import Dataset
 from .decomposition import DecompositionData
 

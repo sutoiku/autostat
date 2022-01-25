@@ -18,7 +18,7 @@ from ..run_settings import KernelSearchSettings
 from ..dataset_adapters import Dataset, ModelPredictions
 from .kernel_builder import build_kernel
 from ..math import calc_bic
-from ..auto_gp_model import CompositionalGPModel
+from ..compositional_gp_model import CompositionalGPModel
 
 torch.set_default_dtype(torch.float64)
 

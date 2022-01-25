@@ -9,7 +9,7 @@ import numpy as np
 import random
 import os
 
-from .auto_gp_model import CompositionalGPModel
+from .compositional_gp_model import CompositionalGPModel
 from .kernel_specs import TopLevelKernelSpec
 from .dataset_adapters import Dataset
 from .utils.logger import JupyterLogger, Logger, SerializedLogQueue

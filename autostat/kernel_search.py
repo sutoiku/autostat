@@ -4,7 +4,7 @@ from typing import NamedTuple, cast
 import ray
 import numpy as np
 
-from .auto_gp_model import CompositionalGPModel
+from .compositional_gp_model import CompositionalGPModel
 from .kernel_specs import TopLevelKernelSpec
 from .dataset_adapters import Dataset, ModelPredictions
 from .utils.logger import JupyterLogger, Logger, SerializedLogQueue
