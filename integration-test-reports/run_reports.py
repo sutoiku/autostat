@@ -63,10 +63,10 @@ def title_separator(title):
 matlab_data_path = "data/"
 
 files_sorted_by_num_data_points = [
-    "01-airline.mat",
+    # "01-airline.mat",
     # "07-call-centre.mat",
     # "08-radio.mat",
-    "04-wheat.mat",
+    # "04-wheat.mat",
     # "02-solar.mat",
     # "11-unemployment.mat",
     # # "10-sulphuric.mat",
@@ -75,7 +75,7 @@ files_sorted_by_num_data_points = [
     # # "13-wages.mat",
     # "06-internet.mat",
     # "05-temperature.mat",
-    "12-births.mat",
+    # "12-births.mat",
 ]
 
 if __name__ == "__main__":
@@ -86,12 +86,13 @@ if __name__ == "__main__":
 
     run_settings = KernelSearchSettings(
         max_search_depth=4,
-        expand_kernel_specs_as_sums=False,
+        expand_kernel_specs_as_sums=True,
         num_cpus=12,
         use_gpu=False,
         use_parallel=True,
         gpu_memory_share_needed=0.45,
         backend=Backend.SKLEARN,
+        cv_split=0.2,
     ).replace_base_kernels_by_names(["PER", "LIN", "RBF"])
 
     logger.print(str(run_settings))
@@ -104,7 +105,7 @@ if __name__ == "__main__":
         file_num = int(file_name[:2])
 
         x, y = load_matlab_test_data_by_file_num(file_num)
-        dataset = Dataset(*scale_split(x, y, split=0.1))
+        dataset = Dataset(*scale_split(x, y, split=run_settings.cv_split))
 
         run_settings = run_settings.replace_kernel_proto_constraints_using_dataset(
             dataset
