@@ -44,8 +44,8 @@ class SklearnCompositionalGPModel(CompositionalGPModel):
         self.training_predictions: ty.Union[ModelPredictions, None] = None
         self.test_predictions: ty.Union[ModelPredictions, None] = None
 
-    def fit(self, data: Dataset) -> None:
-        self.gp.fit(data.train_x, data.train_y)
+    def fit(self) -> None:
+        self.gp.fit(self.data.train_x, self.data.train_y)
 
     def log_likelihood(self) -> float:
         k = ty.cast(Kernel, self.gp.kernel_)

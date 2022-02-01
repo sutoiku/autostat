@@ -19,7 +19,7 @@ class CompositionalGPModel(Protocol):
     ) -> None:
         ...
 
-    def fit(self, data: Dataset) -> None:
+    def fit(self) -> None:
         ...
 
     def predict(self, x: ArrayLike) -> ModelPredictions:

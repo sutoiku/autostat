@@ -59,7 +59,7 @@ def score_kernel_spec(
 
     model = model_class(kernel_spec, data, run_settings=run_settings)
 
-    model.fit(data)
+    model.fit()
 
     log_likelihood = model.log_likelihood()
     num_params = kernel_spec.num_params()

@@ -2,7 +2,7 @@ from sklearn.preprocessing import MinMaxScaler
 import numpy as np
 
 
-def end_block_split(X, split):
+def end_block_split(X, split: float):
     N = round(max(X.shape) * (1 - split))
     return X[:N], X[N:]
 
