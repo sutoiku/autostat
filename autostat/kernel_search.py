@@ -104,31 +104,31 @@ def kernel_search(
             new_specs, data, model_class, kernel_scores, run_settings, logger
         )
 
-        best_kernel_info = get_best_kernel_info(kernel_scores)
+        if logger is not None:
+            best_kernel_info = get_best_kernel_info(kernel_scores)
 
-        best_model = best_kernel_info.model
-        best_fitted_spec = best_kernel_info.spec_fitted
+            best_model = best_kernel_info.model
+            best_fitted_spec = best_kernel_info.spec_fitted
 
-        best_kernel_str = f"""Best at depth {i}:   {best_fitted_spec.spec_str(False,True)}  -- bic: {best_kernel_info.bic:.2f}, log likelihood: {best_kernel_info.log_likelihood:.3f}, M: {best_fitted_spec.num_params()}
-{best_fitted_spec.spec_str(False,False)} 
-{best_fitted_spec.spec_str(True,True)}"""
+            best_kernel_str = f"""Best at depth {i}:   {best_fitted_spec.spec_str(False,True)}  -- bic: {best_kernel_info.bic:.2f}, log likelihood: {best_kernel_info.log_likelihood:.3f}, M: {best_fitted_spec.num_params()}
+    {best_fitted_spec.spec_str(False,False)} 
+    {best_fitted_spec.spec_str(True,True)}"""
 
-        logger.print("## " + best_kernel_str)
+            logger.print("## " + best_kernel_str)
 
-        fig, ax = plot_model(best_model, data)
-        ax.set_title(best_kernel_str)
-        logger.show(fig)
+            fig, ax = plot_model(best_model, data)
+            ax.set_title(best_kernel_str)
+            logger.show(fig)
 
-        expanded_spec = expand_spec(best_fitted_spec)
+            expanded_spec = expand_spec(best_fitted_spec)
 
-        logger.print(f"best spec expanded:\n{expanded_spec.spec_str(True,True)}")
+            logger.print(f"best spec expanded:\n{expanded_spec.spec_str(True,True)}")
+            decomp = decompose_spec(expanded_spec, data.train_x, data.train_y)
+            fig = plot_decomposition(decomp)
+            logger.show(fig)
 
-        decomp = decompose_spec(expanded_spec, data.train_x, data.train_y)
-        fig = plot_decomposition(decomp)
-        logger.show(fig)
-
-        toc = time.perf_counter()
-        logger.print(f"depth {i} complete in: {toc-tic:.3f} s")
+            toc = time.perf_counter()
+            logger.print(f"depth {i} complete in: {toc-tic:.3f} s")
 
     return kernel_scores
 

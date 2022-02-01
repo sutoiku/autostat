@@ -37,8 +37,8 @@ file_names = [
 ]
 
 
-def load_matlab_test_data_by_file_num(file_num: int = 2):
-    # NOTE: default `file_num: int = 2` is Mauna Loa data
+def load_matlab_test_data_by_file_num(file_num: int = 3):
+    # NOTE: default `file_num: int = 3` is Mauna Loa data
     from importlib.resources import files
     from ..test_data import matlab
 

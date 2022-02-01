@@ -95,6 +95,7 @@ class KernelSearchSettings:
     expand_kernel_specs_as_sums: bool = True
 
     max_search_depth: int = 5
+    cv_split: float = 0.15
 
     backend: Backend = Backend.SKLEARN
 

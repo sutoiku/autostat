@@ -92,7 +92,7 @@ def set_constraints_on_spec(
         if isinstance(spec, PeriodicNoConstKernelSpec) or isinstance(
             spec, PeriodicKernelSpec
         ):
-            # FIXME: type handling here sucks
+            # FIXME: type handling here is poor.
             base_kernel = ty.cast(
                 PeriodicKernelSpec,
                 base_kernel,

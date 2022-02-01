@@ -18,9 +18,10 @@ from ..run_settings import KernelSearchSettings
 from ..dataset_adapters import Dataset, ModelPredictions
 from .kernel_builder import build_kernel
 from ..math import calc_bic
+from ..compositional_gp_model import CompositionalGPModel
 
 
-class SklearnCompositionalGPModel:
+class SklearnCompositionalGPModel(CompositionalGPModel):
     def __init__(
         self,
         kernel_spec: KernelSpec,
@@ -58,6 +59,9 @@ class SklearnCompositionalGPModel:
             self.log_likelihood(),
         )
 
+    def predict(self, x):
+        return self._predict(x)
+
     def predict_train(self):
         return self._predict_cached(train=True)
 
@@ -69,10 +73,14 @@ class SklearnCompositionalGPModel:
             if self.training_predictions is None:
                 self.training_predictions = self._predict(self.data.train_x)
             return self.training_predictions
-        else:
+        elif self.data.test_x is not None:
             if self.test_predictions is None:
                 self.test_predictions = self._predict(self.data.test_x)
             return self.test_predictions
+        else:
+            raise ValueError(
+                "cannot `_predict_cached(train=True)` if `self.data.test_x is None`"
+            )
 
     def _predict(self, x: ArrayLike) -> ModelPredictions:
         y_pred, cov = ty.cast(
@@ -99,6 +107,10 @@ class SklearnCompositionalGPModel:
 
     def log_likelihood_test(self) -> float:
         y_pred, _, cov = self.predict_test()
+        if self.data.test_y is None:
+            raise ValueError(
+                "cannot get log_likelihood_test if self.data.test_y is None"
+            )
         y_test = self.data.test_y
 
         Y = y_pred.reshape((-1, 1)) - y_test.reshape((-1, 1))
