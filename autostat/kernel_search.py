@@ -25,26 +25,12 @@ from autostat.sklearn.model_wrapper import SklearnCompositionalGPModel
 from autostat.gpytorch.model_wrapper import GpytorchCompositionalGPModel
 
 
-def get_best_kernel_name_and_info(
-    kernel_scores: KernelScores,
-) -> tuple[str, ScoredKernelInfo]:
-    return min(
-        kernel_scores.items(), key=lambda name_score_info: name_score_info[1].bic
-    )
-
-
-# def get_best_kernel_info(
-#     kernel_scores: KernelScores,
-# ) -> ScoredKernelInfo:
-#     return min(kernel_scores.values(), key=lambda name_score_info: name_score_info.bic)
-
-
 def get_best_kernel_info(
     kernel_scores: KernelScores,
 ) -> ScoredKernelInfo:
     return max(
         kernel_scores.values(),
-        key=lambda name_score_info: name_score_info.log_likelihood_test,
+        key=lambda name_score_info: name_score_info.kernel_score,
     )
 
 
@@ -110,9 +96,10 @@ def kernel_search(
             best_model = best_kernel_info.model
             best_fitted_spec = best_kernel_info.spec_fitted
 
-            best_kernel_str = f"""Best at depth {i}:   {best_fitted_spec.spec_str(False,True)}  -- bic: {best_kernel_info.bic:.2f}, log likelihood: {best_kernel_info.log_likelihood:.3f}, M: {best_fitted_spec.num_params()}
-    {best_fitted_spec.spec_str(False,False)} 
-    {best_fitted_spec.spec_str(True,True)}"""
+            best_kernel_str = f"""Best at depth {i}:   {best_fitted_spec.spec_str(False,True)}   --   score: {best_kernel_info.kernel_score:.2f}
+log likelihood: {best_kernel_info.log_likelihood:.3f}, M: {best_fitted_spec.num_params()}
+{best_fitted_spec.spec_str(False,False)} 
+{best_fitted_spec.spec_str(True,True)}"""
 
             logger.print("## " + best_kernel_str)
 

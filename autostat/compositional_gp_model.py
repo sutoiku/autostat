@@ -48,3 +48,6 @@ class CompositionalGPModel(Protocol):
 
     def log_likelihood_test(self) -> float:
         ...
+
+    def prediction_log_prob_score(self) -> float:
+        ...

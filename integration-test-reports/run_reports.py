@@ -1,3 +1,4 @@
+import traceback
 from autostat.run_settings import KernelSearchSettings, Backend
 
 from autostat.kernel_search import kernel_search, get_best_kernel_info
@@ -63,19 +64,19 @@ def title_separator(title):
 matlab_data_path = "data/"
 
 files_sorted_by_num_data_points = [
-    # "01-airline.mat",
+    "01-airline.mat",
     # "07-call-centre.mat",
-    # "08-radio.mat",
+    "08-radio.mat",
     # "04-wheat.mat",
-    # "02-solar.mat",
+    "02-solar.mat",
     # "11-unemployment.mat",
-    # # "10-sulphuric.mat",
+    # "10-sulphuric.mat",
     # # "09-gas-production.mat",
     "03-mauna.mat",
     # # "13-wages.mat",
-    # "06-internet.mat",
+    "06-internet.mat",
     # "05-temperature.mat",
-    # "12-births.mat",
+    "12-births.mat",
 ]
 
 if __name__ == "__main__":
@@ -92,7 +93,7 @@ if __name__ == "__main__":
         use_parallel=True,
         gpu_memory_share_needed=0.45,
         backend=Backend.SKLEARN,
-        cv_split=0.2,
+        cv_split=0.15,
     ).replace_base_kernels_by_names(["PER", "LIN", "RBF"])
 
     logger.print(str(run_settings))
@@ -112,15 +113,22 @@ if __name__ == "__main__":
         )
 
         title_separator(f"Dataset: {file_name}")
-        tic = time.perf_counter()
-        kernel_scores = kernel_search(dataset, run_settings=run_settings, logger=logger)
-        toc = time.perf_counter()
-        best_kernel_info = get_best_kernel_info(kernel_scores)
-        prediction_scores.append(best_kernel_info.log_likelihood_test)
+        try:
+            tic = time.perf_counter()
+            kernel_scores = kernel_search(
+                dataset, run_settings=run_settings, logger=logger
+            )
+            toc = time.perf_counter()
+            best_kernel_info = get_best_kernel_info(kernel_scores)
+            prediction_scores.append(best_kernel_info.log_likelihood_test)
 
-        logger.print(f"best_kernel_info {str(best_kernel_info)}")
+            logger.print(f"best_kernel_info {str(best_kernel_info)}")
 
-        logger.print(f"Total time for {file_name}: {toc-tic:.3f} s")
+            logger.print(f"Total time for {file_name}: {toc-tic:.3f} s")
+        except Exception as e:
+            logger.print("##ERROR")
+            logger.print(repr(e))
+            logger.print(traceback.format_exc())
 
     logger.prepend(f"prediction_scores: {str(prediction_scores)}")
     logger.prepend(f"sum prediction_scores: {str(sum(prediction_scores))}")

@@ -126,3 +126,29 @@ class SklearnCompositionalGPModel(CompositionalGPModel):
             -0.5 * (Y.T @ Sigma_inv @ Y + log_det_K + N * np.log(2 * np.pi)).item()
         )
         return log_prob_score
+
+    def prediction_log_prob_score(self) -> float:
+        # NOTE: we don't need the covariance for this score b/c we're only
+        # concerned about the epsilon between the predicted latent function y_pred
+        # and the observation y_test. Under the assumption that we have noisy observations--
+        # y_test = y_pred + ε , with ε ~ N(0, σ^2 * I)
+        #  -- then the prob of seeing a collection of epsilons
+        # ε = y_test - y_pred
+        # does not depend on the covariance structure of the kernel matrix
+        # def test_exists():
+        if self.data.test_y is None:
+            raise ValueError("prediction_log_prob_score requires test data")
+
+    
+        y_pred, y_std, _ = self.predict_test()
+        y_test = self.data.test_y
+        Y = y_pred.reshape((-1, 1)) - y_test.reshape((-1, 1))
+
+        # z_score_sqr = ((y_pred - y_test) / y_std) ** 2
+        z_score_sqr = (Y / y_std) ** 2
+        N = len(y_pred)
+
+        log_prob_score = -0.5 * N * np.log(2 * np.pi) - np.sum(
+            0.5 * z_score_sqr + np.log(y_std)
+        )
+        return log_prob_score

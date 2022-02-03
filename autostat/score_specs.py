@@ -35,6 +35,7 @@ class ScoredKernelInfo(ty.NamedTuple):
     bic: float
     log_likelihood: float
     log_likelihood_test: float
+    kernel_score: float
 
     # def clear_model
 
@@ -68,11 +69,13 @@ def score_kernel_spec(
     fig, ax = plot_model(model, data)
 
     prediction_log_likelihood = model.log_likelihood_test()
+    prediction_log_prob_score = model.prediction_log_prob_score()
 
     fitted_spec = model.to_spec()
 
     spec_str = f"""{fitted_spec.spec_str(False,True)}   --  {fitted_spec.spec_str(False,False)}
-bic: {bic:.2f}, M: {num_params}, log likelihood: {log_likelihood:.3f}, pred. score: {prediction_log_likelihood:.3f}
+bic: {bic:.2f}, M: {num_params}, log likelihood: {log_likelihood:.3f}
+pred. score: {prediction_log_prob_score:.3f}, pred. ll: {prediction_log_likelihood:.3f}
 {fitted_spec.spec_str(True,True)}"""
 
     ax.set_title(spec_str)
@@ -90,6 +93,7 @@ bic: {bic:.2f}, M: {num_params}, log likelihood: {log_likelihood:.3f}, pred. sco
             bic,
             log_likelihood,
             prediction_log_likelihood,
+            kernel_score=prediction_log_prob_score,
         ),
         logger,
     )
