@@ -1,10 +1,10 @@
-from autostat.run_settings import RunSettings, Backend
-
+import traceback
+from autostat.run_settings import KernelSearchSettings, Backend
 
 from autostat.kernel_search import kernel_search, get_best_kernel_info
-
 from autostat.dataset_adapters import Dataset
-from autostat.utils.test_data_loader import load_test_dataset
+from autostat.utils.data_prep import scale_split
+from autostat.test_data.test_data_loader import load_matlab_test_data_by_file_num
 
 from html_reports import Report
 from markdown import markdown
@@ -64,17 +64,17 @@ def title_separator(title):
 matlab_data_path = "data/"
 
 files_sorted_by_num_data_points = [
-    "01-airline.mat",
+    # "01-airline.mat",
     # "07-call-centre.mat",
     # "08-radio.mat",
-    "04-wheat.mat",
+    # "04-wheat.mat",
     # "02-solar.mat",
     # "11-unemployment.mat",
-    # # "10-sulphuric.mat",
+    # "10-sulphuric.mat",
     # # "09-gas-production.mat",
-    # "03-mauna.mat",
+    "03-mauna.mat",
     # # "13-wages.mat",
-    # # "06-internet.mat",
+    # "06-internet.mat",
     # "05-temperature.mat",
     # "12-births.mat",
 ]
@@ -85,14 +85,16 @@ if __name__ == "__main__":
     np.random.seed(1234)
     print("starting report")
 
-    run_settings = RunSettings(
-        max_search_depth=2,
-        expand_kernel_specs_as_sums=False,
+    run_settings = KernelSearchSettings(
+        max_search_depth=4,
+        expand_kernel_specs_as_sums=True,
         num_cpus=12,
         use_gpu=False,
         use_parallel=True,
         gpu_memory_share_needed=0.45,
         backend=Backend.SKLEARN,
+        cv_split=0.15,
+        # sklean_n_restarts_optimizer=4,
     ).replace_base_kernels_by_names(["PER", "LIN", "RBF"])
 
     logger.print(str(run_settings))
@@ -104,22 +106,30 @@ if __name__ == "__main__":
     for file_name in files_sorted_by_num_data_points:
         file_num = int(file_name[:2])
 
-        dataset = load_test_dataset(matlab_data_path, file_num, split=0.1)
+        x, y = load_matlab_test_data_by_file_num(file_num)
+        dataset = Dataset(*scale_split(x, y, split=run_settings.cv_split))
 
         run_settings = run_settings.replace_kernel_proto_constraints_using_dataset(
             dataset
         )
 
         title_separator(f"Dataset: {file_name}")
-        tic = time.perf_counter()
-        kernel_scores = kernel_search(dataset, run_settings=run_settings, logger=logger)
-        toc = time.perf_counter()
-        best_kernel_info = get_best_kernel_info(kernel_scores)
-        prediction_scores.append(best_kernel_info.prediction_score)
+        try:
+            tic = time.perf_counter()
+            kernel_scores = kernel_search(
+                dataset, run_settings=run_settings, logger=logger
+            )
+            toc = time.perf_counter()
+            best_kernel_info = get_best_kernel_info(kernel_scores)
+            prediction_scores.append(best_kernel_info.log_likelihood_test)
 
-        logger.print(f"best_kernel_info {str(best_kernel_info)}")
+            logger.print(f"best_kernel_info {str(best_kernel_info)}")
 
-        logger.print(f"Total time for {file_name}: {toc-tic:.3f} s")
+            logger.print(f"Total time for {file_name}: {toc-tic:.3f} s")
+        except Exception as e:
+            logger.print("##ERROR")
+            logger.print(repr(e))
+            logger.print(traceback.format_exc())
 
     logger.prepend(f"prediction_scores: {str(prediction_scores)}")
     logger.prepend(f"sum prediction_scores: {str(sum(prediction_scores))}")

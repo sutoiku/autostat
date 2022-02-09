@@ -14,18 +14,19 @@ from ..kernel_specs import (
     TopLevelKernelSpec,
     KernelSpec,
 )
-from ..run_settings import RunSettings
+from ..run_settings import KernelSearchSettings
 from ..dataset_adapters import Dataset, ModelPredictions
 from .kernel_builder import build_kernel
 from ..math import calc_bic
+from ..compositional_gp_model import CompositionalGPModel
 
 
-class SklearnGPModel:
+class SklearnCompositionalGPModel(CompositionalGPModel):
     def __init__(
         self,
         kernel_spec: KernelSpec,
         data: Dataset,
-        run_settings: RunSettings,
+        run_settings: KernelSearchSettings,
         alpha=1e-7,
     ) -> None:
         self.kernel_spec = kernel_spec
@@ -43,8 +44,8 @@ class SklearnGPModel:
         self.training_predictions: ty.Union[ModelPredictions, None] = None
         self.test_predictions: ty.Union[ModelPredictions, None] = None
 
-    def fit(self, data: Dataset) -> None:
-        self.gp.fit(data.train_x, data.train_y)
+    def fit(self) -> None:
+        self.gp.fit(self.data.train_x, self.data.train_y)
 
     def log_likelihood(self) -> float:
         k = ty.cast(Kernel, self.gp.kernel_)
@@ -58,6 +59,9 @@ class SklearnGPModel:
             self.log_likelihood(),
         )
 
+    def predict(self, x):
+        return self._predict(x)
+
     def predict_train(self):
         return self._predict_cached(train=True)
 
@@ -69,43 +73,73 @@ class SklearnGPModel:
             if self.training_predictions is None:
                 self.training_predictions = self._predict(self.data.train_x)
             return self.training_predictions
-        else:
+        elif self.data.test_x is not None:
             if self.test_predictions is None:
                 self.test_predictions = self._predict(self.data.test_x)
             return self.test_predictions
+        else:
+            raise ValueError(
+                "cannot `_predict_cached(train=True)` if `self.data.test_x is None`"
+            )
 
     def _predict(self, x: ArrayLike) -> ModelPredictions:
-        y_pred, y_std = ty.cast(
+        y_pred, cov = ty.cast(
             tuple[NDArray[np.float_], NDArray[np.float_]],
-            self.gp.predict(x, return_std=True),
+            self.gp.predict(x, return_std=False, return_cov=True),
         )
         y_pred = y_pred.flatten()
-        y_std = y_std.flatten()
-        return ModelPredictions(y_pred, y_std)
+        y_std = np.sqrt(np.diag(cov)).flatten()
+
+        return ModelPredictions(y_pred, y_std, cov)
 
     def residuals(self) -> NDArray[np.float_]:
-        yHat, _ = self.predict_train()
+        yHat, _, _ = self.predict_train()
         yHat = yHat.flatten()
         train_y = self.data.train_y.flatten()
         residuals = train_y - yHat
         return residuals
 
-    def print_fitted_kernel(self):
-        print(self.gp.kernel_)
-
     def to_spec(self) -> TopLevelKernelSpec:
         return to_kernel_spec(ty.cast(Sum, self.gp.kernel_))
 
-    def prediction_log_prob_score(self) -> float:
-        # NOTE: we don't need the covariance for this score b/c we're only
-        # concerned about the epsilon between the predicted latent function y_pred
-        # and the observation y_test. Under the assumption that we have noisy observations--
-        # y_test = y_pred + ε , with ε ~ N(0, σ^2 * I)
-        #  -- then the prob of seeing a collection of epsilons
-        # ε = y_test - y_pred
-        # does not depend on the covariance structure of the kernel matrix
-        y_pred, y_std = self.predict_test()
+    def log_likelihood_test(self) -> float:
+        y_pred, _, cov = self.predict_test()
+        if self.data.test_y is None:
+            raise ValueError(
+                "cannot get log_likelihood_test if self.data.test_y is None"
+            )
         y_test = self.data.test_y
+
+        Y = y_pred.reshape((-1, 1)) - y_test.reshape((-1, 1))
+        N = len(y_pred)
+
+        L = np.linalg.cholesky(cov)
+        L_inv = np.linalg.inv(np.linalg.cholesky(cov))
+        Sigma_inv = L_inv.T @ L_inv
+        _, log_det_L = np.linalg.slogdet(L)
+        log_det_K = 2 * log_det_L
+
+        log_prob_score = (
+            -0.5 * (Y.T @ Sigma_inv @ Y + log_det_K + N * np.log(2 * np.pi)).item()
+        )
+        return log_prob_score
+
+    def prediction_log_prob_score(self) -> float:
+        # NOTE: this is kind of a variance weighted L2 squared error metric.
+        # We assume that
+        # y_test_t = y_pred_t + ε_t , with ε_t ~ N(0, σ_t^2 * I)
+        # -- where the epsilons
+        # ε_t = y_test_t - y_pred_t
+        # are not identically distributed, but are assumed to be independent.
+        # Under this assumption, the score does not depend on the covariance
+        # structure of the kernel matrix.
+
+        if self.data.test_y is None:
+            raise ValueError("prediction_log_prob_score requires test data")
+
+        y_pred, y_std, _ = self.predict_test()
+        y_test = self.data.test_y
+
         z_score_sqr = ((y_pred - y_test) / y_std) ** 2
         N = len(y_pred)
 

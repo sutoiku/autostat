@@ -9,11 +9,11 @@ import numpy as np
 import random
 import os
 
-from .auto_gp_model import AutoGpModel
+from .compositional_gp_model import CompositionalGPModel
 from .kernel_specs import TopLevelKernelSpec
 from .dataset_adapters import Dataset
 from .utils.logger import JupyterLogger, Logger, SerializedLogQueue
-from .run_settings import RunSettings
+from .run_settings import KernelSearchSettings
 from .plots import plot_decomposition, plot_model
 
 # from .kernel_search import ScoredKernelInfo, KernelScores
@@ -22,8 +22,8 @@ from .plots import plot_decomposition, plot_model
 class ScoreKernelSpecArgs(ty.NamedTuple):
     kernel_spec: TopLevelKernelSpec
     data: Dataset
-    model_class: type[AutoGpModel]
-    run_settings: RunSettings
+    model_class: type[CompositionalGPModel]
+    run_settings: KernelSearchSettings
     logger: SerializedLogQueue
 
 
@@ -31,10 +31,11 @@ class ScoredKernelInfo(ty.NamedTuple):
     name: str
     spec_pre_fit: TopLevelKernelSpec
     spec_fitted: TopLevelKernelSpec
-    model: AutoGpModel
+    model: CompositionalGPModel
     bic: float
     log_likelihood: float
-    prediction_score: ty.Union[float, None] = None
+    log_likelihood_test: float
+    kernel_score: float
 
     # def clear_model
 
@@ -59,7 +60,7 @@ def score_kernel_spec(
 
     model = model_class(kernel_spec, data, run_settings=run_settings)
 
-    model.fit(data)
+    model.fit()
 
     log_likelihood = model.log_likelihood()
     num_params = kernel_spec.num_params()
@@ -67,13 +68,14 @@ def score_kernel_spec(
 
     fig, ax = plot_model(model, data)
 
-    prediction_log_likelihood = model.prediction_log_prob_score()
-    # prediction_log_likelihood = 2.1
+    prediction_log_likelihood = model.log_likelihood_test()
+    prediction_log_prob_score = model.prediction_log_prob_score()
 
     fitted_spec = model.to_spec()
 
     spec_str = f"""{fitted_spec.spec_str(False,True)}   --  {fitted_spec.spec_str(False,False)}
-bic: {bic:.2f}, M: {num_params}, log likelihood: {log_likelihood:.3f}, pred. score: {prediction_log_likelihood:.3f}
+bic: {bic:.2f}, M: {num_params}, log likelihood: {log_likelihood:.3f}
+pred. score: {prediction_log_prob_score:.3f}, pred. ll: {prediction_log_likelihood:.3f}
 {fitted_spec.spec_str(True,True)}"""
 
     ax.set_title(spec_str)
@@ -91,6 +93,7 @@ bic: {bic:.2f}, M: {num_params}, log likelihood: {log_likelihood:.3f}, pred. sco
             bic,
             log_likelihood,
             prediction_log_likelihood,
+            kernel_score=prediction_log_prob_score,
         ),
         logger,
     )
@@ -110,9 +113,9 @@ bic: {bic:.2f}, M: {num_params}, log likelihood: {log_likelihood:.3f}, pred. sco
 def score_kernel_specs(
     specs: list[TopLevelKernelSpec],
     data: Dataset,
-    model_class: type[AutoGpModel],
+    model_class: type[CompositionalGPModel],
     kernel_scores: KernelScores,
-    run_settings: RunSettings,
+    run_settings: KernelSearchSettings,
     logger: Logger = None,
 ) -> KernelScores:
     logger = logger or JupyterLogger()

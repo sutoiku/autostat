@@ -4,12 +4,12 @@ from typing import NamedTuple, cast
 import ray
 import numpy as np
 
-from .auto_gp_model import AutoGpModel
+from .compositional_gp_model import CompositionalGPModel
 from .kernel_specs import TopLevelKernelSpec
-from .dataset_adapters import Dataset
+from .dataset_adapters import Dataset, ModelPredictions
 from .utils.logger import JupyterLogger, Logger, SerializedLogQueue
 from .kernel_swaps import top_level_spec_swaps
-from .run_settings import RunSettings, Backend
+from .run_settings import KernelSearchSettings, Backend
 from .plots import plot_decomposition, plot_model
 from .expand_spec import expand_spec
 from .kernel_spec_initialization import intialize_base_kernel_prototypes_from_residuals
@@ -21,27 +21,22 @@ from .score_specs import (
 from .constraints import set_constraints_on_spec
 
 
-from autostat.sklearn.model_wrapper import SklearnGPModel
-from autostat.gpytorch.model_wrapper import GpytorchGPModel
-
-
-def get_best_kernel_name_and_info(
-    kernel_scores: KernelScores,
-) -> tuple[str, ScoredKernelInfo]:
-    return min(
-        kernel_scores.items(), key=lambda name_score_info: name_score_info[1].bic
-    )
+from autostat.sklearn.model_wrapper import SklearnCompositionalGPModel
+from autostat.gpytorch.model_wrapper import GpytorchCompositionalGPModel
 
 
 def get_best_kernel_info(
     kernel_scores: KernelScores,
 ) -> ScoredKernelInfo:
-    return min(kernel_scores.values(), key=lambda name_score_info: name_score_info.bic)
+    return max(
+        kernel_scores.values(),
+        key=lambda name_score_info: name_score_info.kernel_score,
+    )
 
 
 def kernel_search(
     data: Dataset,
-    run_settings: RunSettings,
+    run_settings: KernelSearchSettings,
     kernel_scores: KernelScores = None,
     logger: Logger = None,
 ) -> KernelScores:
@@ -50,13 +45,13 @@ def kernel_search(
     logger = logger or JupyterLogger()
     best_model = None
 
-    # FIXME move to general init? or perhaps this IS the actual init...
-    if run_settings.use_parallel:
-        ray.init(num_cpus=run_settings.num_cpus, ignore_reinit_error=True)
+    # # FIXME move to general init? or perhaps this IS the actual init...
+    # if run_settings.use_parallel:
+    #     ray.init(num_cpus=run_settings.num_cpus, ignore_reinit_error=True)
     if run_settings.backend == Backend.GPYTORCH:
-        model_class = GpytorchGPModel
+        model_class = GpytorchCompositionalGPModel
     else:
-        model_class = SklearnGPModel
+        model_class = SklearnCompositionalGPModel
 
     logger.print(str(run_settings.initial_kernels))
 
@@ -95,44 +90,45 @@ def kernel_search(
             new_specs, data, model_class, kernel_scores, run_settings, logger
         )
 
-        best_kernel_info = get_best_kernel_info(kernel_scores)
+        if logger is not None:
+            best_kernel_info = get_best_kernel_info(kernel_scores)
 
-        best_model = best_kernel_info.model
-        best_fitted_spec = best_kernel_info.spec_fitted
+            best_model = best_kernel_info.model
+            best_fitted_spec = best_kernel_info.spec_fitted
 
-        best_kernel_str = f"""Best at depth {i}:   {best_fitted_spec.spec_str(False,True)}  -- bic: {best_kernel_info.bic:.2f}, log likelihood: {best_kernel_info.log_likelihood:.3f}, M: {best_fitted_spec.num_params()}
+            best_kernel_str = f"""Best at depth {i}:   {best_fitted_spec.spec_str(False,True)}   --   score: {best_kernel_info.kernel_score:.2f}
+log likelihood: {best_kernel_info.log_likelihood:.3f}, M: {best_fitted_spec.num_params()}
 {best_fitted_spec.spec_str(False,False)} 
 {best_fitted_spec.spec_str(True,True)}"""
 
-        logger.print("## " + best_kernel_str)
+            logger.print("## " + best_kernel_str)
 
-        fig, ax = plot_model(best_model, data)
-        ax.set_title(best_kernel_str)
-        logger.show(fig)
+            fig, ax = plot_model(best_model, data)
+            ax.set_title(best_kernel_str)
+            logger.show(fig)
 
-        expanded_spec = expand_spec(best_fitted_spec)
+            expanded_spec = expand_spec(best_fitted_spec)
 
-        logger.print(f"best spec expanded:\n{expanded_spec.spec_str(True,True)}")
+            logger.print(f"best spec expanded:\n{expanded_spec.spec_str(True,True)}")
+            decomp = decompose_spec(expanded_spec, data.train_x, data.train_y)
+            fig = plot_decomposition(decomp)
+            logger.show(fig)
 
-        decomp = decompose_spec(expanded_spec, data.train_x, data.train_y)
-        fig = plot_decomposition(decomp)
-        logger.show(fig)
-
-        toc = time.perf_counter()
-        logger.print(f"depth {i} complete in: {toc-tic:.3f} s")
+            toc = time.perf_counter()
+            logger.print(f"depth {i} complete in: {toc-tic:.3f} s")
 
     return kernel_scores
 
 
 def find_best_kernel_and_predict(
     data: Dataset,
-    run_settings: RunSettings,
+    run_settings: KernelSearchSettings,
     kernel_scores: KernelScores = None,
-) -> tuple[np.ndarray, np.ndarray]:
+) -> ModelPredictions:
     kernel_scores = kernel_search(
         data, run_settings=run_settings, kernel_scores=kernel_scores
     )
     best_kernel_info = get_best_kernel_info(kernel_scores)
 
-    best_model = cast(AutoGpModel, best_kernel_info.model)
+    best_model = cast(CompositionalGPModel, best_kernel_info.model)
     return best_model.predict_test()

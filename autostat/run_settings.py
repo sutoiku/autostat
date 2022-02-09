@@ -84,25 +84,24 @@ class Backend(Enum):
 
 
 @dataclass(frozen=True)
-class RunSettings:
+class KernelSearchSettings:
     initial_kernels: list[TopLevelKernelSpec] = field(
         default_factory=default_initial_kernels
     )
     base_kernel_prototypes: list[BaseKernelSpec] = field(
         default_factory=default_kernels_prototypes
     )
-    kernel_priors: None = None
 
-    expand_kernel_specs_as_sums: bool = False
+    expand_kernel_specs_as_sums: bool = True
 
-    log_level: None = None
     max_search_depth: int = 5
+    cv_split: float = 0.15
 
     backend: Backend = Backend.SKLEARN
 
     use_parallel: bool = False
     use_gpu: bool = False
-    num_cpus: int = 12
+    num_cpus: int = 1
     num_gpus: int = 1
     gpu_max_simultaneous: int = 2
     gpu_memory_share_needed: float = 0.4
@@ -113,12 +112,12 @@ class RunSettings:
 
     sklean_n_restarts_optimizer: int = 0
 
-    def replace_base_kernels_by_names(self, names: list[str]) -> "RunSettings":
+    def replace_base_kernels_by_names(self, names: list[str]) -> "KernelSearchSettings":
         return replace(self, base_kernel_prototypes=kernel_protos_from_names(names))
 
     def replace_kernel_proto_constraints_using_dataset(
         self, dataset: Dataset
-    ) -> "RunSettings":
+    ) -> "KernelSearchSettings":
         initial_kernels = update_kernel_protos_constrained_with_data(
             self.base_kernel_prototypes, dataset
         )
@@ -139,3 +138,6 @@ class RunSettings:
 
     def asdict(self):
         return asdict(self)
+
+    def replace_with_kwargs(self, kwargs):
+        return replace(self, **kwargs)
