@@ -99,9 +99,6 @@ class SklearnCompositionalGPModel(CompositionalGPModel):
         residuals = train_y - yHat
         return residuals
 
-    def print_fitted_kernel(self):
-        print(self.gp.kernel_)
-
     def to_spec(self) -> TopLevelKernelSpec:
         return to_kernel_spec(ty.cast(Sum, self.gp.kernel_))
 
@@ -128,24 +125,22 @@ class SklearnCompositionalGPModel(CompositionalGPModel):
         return log_prob_score
 
     def prediction_log_prob_score(self) -> float:
-        # NOTE: we don't need the covariance for this score b/c we're only
-        # concerned about the epsilon between the predicted latent function y_pred
-        # and the observation y_test. Under the assumption that we have noisy observations--
-        # y_test = y_pred + ε , with ε ~ N(0, σ^2 * I)
-        #  -- then the prob of seeing a collection of epsilons
-        # ε = y_test - y_pred
-        # does not depend on the covariance structure of the kernel matrix
-        # def test_exists():
+        # NOTE: this is kind of a variance weighted L2 squared error metric.
+        # We assume that
+        # y_test_t = y_pred_t + ε_t , with ε_t ~ N(0, σ_t^2 * I)
+        # -- where the epsilons
+        # ε_t = y_test_t - y_pred_t
+        # are not identically distributed, but are assumed to be independent.
+        # Under this assumption, the score does not depend on the covariance
+        # structure of the kernel matrix.
+
         if self.data.test_y is None:
             raise ValueError("prediction_log_prob_score requires test data")
 
-    
         y_pred, y_std, _ = self.predict_test()
         y_test = self.data.test_y
-        Y = y_pred.reshape((-1, 1)) - y_test.reshape((-1, 1))
 
-        # z_score_sqr = ((y_pred - y_test) / y_std) ** 2
-        z_score_sqr = (Y / y_std) ** 2
+        z_score_sqr = ((y_pred - y_test) / y_std) ** 2
         N = len(y_pred)
 
         log_prob_score = -0.5 * N * np.log(2 * np.pi) - np.sum(

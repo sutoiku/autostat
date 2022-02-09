@@ -39,7 +39,7 @@ autostat.plot.plot_decomposition(abcd_model)
   - Though a CV-like approach may appear a bit out of place in a largely Bayesian method, we note that the BIC score used in the original paper also seems to have been originally chosen as a matter of expedience rather than strictest rigour. (See e.g. https://dl.acm.org/doi/10.5555/3157382.3157422 for an approach that uses a more fully Bayesian method of selecting compositional models, though at the cost of additional complexity.)
   - Note that once the best model structure is chosen, the final model is refit using all available data.
 
-- To find a suitable initialization for newly introduce period kernel components at search depth _n+1_, we run an FFT over the residuals of the upstream model at depth _n_ and extract the frequency with the largest weight. This typical results in better fits and convergence.
+- To find a suitable initialization for newly introduced periodic kernel components at search depth _n+1_, we run an FFT over the residuals of the upstream model at depth _n_ and extract the frequency with the largest weight. This typical results in better fits and convergence.
   - Note also that adding random initializations can degrade performance badly for PER. I'm not sure exactly what is going on, but somehow the model is finding _numerically better_ optima when it deviates from the residual-based starting point, however the fits are much less convincing visually.
 
 ## Open questions and problems

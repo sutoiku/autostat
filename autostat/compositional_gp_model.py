@@ -37,9 +37,6 @@ class CompositionalGPModel(Protocol):
     def to_spec(self) -> TopLevelKernelSpec:
         ...
 
-    def print_fitted_kernel(self) -> None:
-        ...
-
     def bic(self) -> float:
         ...
 

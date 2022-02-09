@@ -64,19 +64,19 @@ def title_separator(title):
 matlab_data_path = "data/"
 
 files_sorted_by_num_data_points = [
-    "01-airline.mat",
+    # "01-airline.mat",
     # "07-call-centre.mat",
-    "08-radio.mat",
+    # "08-radio.mat",
     # "04-wheat.mat",
-    "02-solar.mat",
+    # "02-solar.mat",
     # "11-unemployment.mat",
     # "10-sulphuric.mat",
     # # "09-gas-production.mat",
     "03-mauna.mat",
     # # "13-wages.mat",
-    "06-internet.mat",
+    # "06-internet.mat",
     # "05-temperature.mat",
-    "12-births.mat",
+    # "12-births.mat",
 ]
 
 if __name__ == "__main__":
@@ -94,6 +94,7 @@ if __name__ == "__main__":
         gpu_memory_share_needed=0.45,
         backend=Backend.SKLEARN,
         cv_split=0.15,
+        # sklean_n_restarts_optimizer=4,
     ).replace_base_kernels_by_names(["PER", "LIN", "RBF"])
 
     logger.print(str(run_settings))
